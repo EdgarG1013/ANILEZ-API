@@ -1,10 +1,11 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../prisma/generated/prisma"
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ============================================================
@@ -31,10 +32,10 @@ model usuarios {
 // Equivalente en Laravel: Tabla "preferencias" (1:1 con usuario)
 // ============================================================
 model preferencias {
-  id           Int      @id @default(autoincrement())
-  usuarioId    Int      @unique @map("usuario_id")
-  sfw          Boolean  @default(true)
-  creadoEn     DateTime @default(now()) @map("creado_en")
+  id            Int      @id @default(autoincrement())
+  usuarioId     Int      @unique @map("usuario_id")
+  sfw           Boolean  @default(true)
+  creadoEn      DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
 
   // Relación 1:1 con usuario
