@@ -9,25 +9,25 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { MailService } from './mail.service.js';
-import { RegisterDto } from './dto/register.dto.js';
-import { LoginDto } from './dto/login.dto.js';
-import { ForgotPasswordDto } from './dto/forgot-password.dto.js';
-import { ResetPasswordDto } from './dto/reset-password.dto.js';
+import { CorreoService } from './correo.service.js';
+import { RegistrarDto } from './dto/registrar.dto.js';
+import { IniciarSesionDto } from './dto/iniciar-sesion.dto.js';
+import { OlvidarContrasenaDto } from './dto/olvidar-contrasena.dto.js';
+import { RestablecerContrasenaDto } from './dto/restablecer-contrasena.dto.js';
 
 @Injectable()
-export class AuthService {
+export class AutenticacionService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
-    private mailService: MailService,
+    private correoService: CorreoService,
   ) {}
 
   // ============================================================
   // REGISTRO
   // Equivalente en Laravel: AuthController@registrarse
   // ============================================================
-  async register(dto: RegisterDto) {
+  async registrar(dto: RegistrarDto) {
     const existe = await this.prisma.usuarios.findUnique({
       where: { correo: dto.correo },
     });
@@ -59,7 +59,7 @@ export class AuthService {
     });
 
     const verificationToken = crypto.randomBytes(32).toString('hex');
-    await this.mailService.sendVerificationEmail(
+    await this.correoService.enviarCorreoVerificacion(
       usuario.correo,
       usuario.nombre,
       verificationToken,
@@ -80,10 +80,10 @@ export class AuthService {
   }
 
   // ============================================================
-  // LOGIN
+  // INICIAR SESIÓN
   // Equivalente en Laravel: AuthController@login
   // ============================================================
-  async login(dto: LoginDto) {
+  async iniciarSesion(dto: IniciarSesionDto) {
     const usuario = await this.prisma.usuarios.findUnique({
       where: { correo: dto.correo },
     });
@@ -122,9 +122,9 @@ export class AuthService {
   // PERFIL (usuario autenticado)
   // Equivalente en Laravel: AuthController@usuario
   // ============================================================
-  async getProfile(userId: number) {
+  async obtenerPerfil(usuarioId: number) {
     const usuario = await this.prisma.usuarios.findUnique({
-      where: { id: userId },
+      where: { id: usuarioId },
       select: {
         id: true,
         nombre: true,
@@ -149,7 +149,7 @@ export class AuthService {
   // OLVIDÓ CONTRASEÑA
   // Equivalente en Laravel: AuthController@solicitarRestablecimiento
   // ============================================================
-  async forgotPassword(dto: ForgotPasswordDto) {
+  async olvidarContrasena(dto: OlvidarContrasenaDto) {
     const usuario = await this.prisma.usuarios.findUnique({
       where: { correo: dto.correo },
     });
@@ -164,7 +164,6 @@ export class AuthService {
     const token = crypto.randomBytes(32).toString('hex');
     const tokenHash = await bcrypt.hash(token, 10);
 
-    // El campo en Prisma se llama "email" (el modelo password_reset_tokens tiene email como PK)
     await this.prisma.password_reset_tokens.upsert({
       where: { email: dto.correo },
       update: {
@@ -177,7 +176,7 @@ export class AuthService {
       },
     });
 
-    await this.mailService.sendPasswordResetEmail(
+    await this.correoService.enviarCorreoRestablecerContrasena(
       usuario.correo,
       usuario.nombre,
       token,
@@ -193,7 +192,7 @@ export class AuthService {
   // RESTABLECER CONTRASEÑA
   // Equivalente en Laravel: AuthController@restablecerContrasena
   // ============================================================
-  async resetPassword(dto: ResetPasswordDto) {
+  async restablecerContrasena(dto: RestablecerContrasenaDto) {
     const resetToken = await this.prisma.password_reset_tokens.findUnique({
       where: { email: dto.correo },
     });
@@ -238,7 +237,7 @@ export class AuthService {
   // CERRAR SESIÓN
   // Equivalente en Laravel: AuthController@logout
   // ============================================================
-  async logout() {
+  async cerrarSesion() {
     return {
       ok: true,
       mensaje: 'Sesión cerrada exitosamente',

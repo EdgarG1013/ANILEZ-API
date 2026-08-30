@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 
 @Injectable()
-export class MailService {
+export class CorreoService {
   private transporter: nodemailer.Transporter;
 
   constructor() {
@@ -15,7 +15,7 @@ export class MailService {
     });
   }
 
-  async sendVerificationEmail(
+  async enviarCorreoVerificacion(
     correo: string,
     nombre: string,
     token: string,
@@ -39,7 +39,7 @@ export class MailService {
     });
   }
 
-  async sendPasswordResetEmail(
+  async enviarCorreoRestablecerContrasena(
     correo: string,
     nombre: string,
     token: string,

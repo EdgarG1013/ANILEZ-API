@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client"
-  output   = "../prisma/generated/prisma"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -22,10 +22,8 @@ model usuarios {
   creado_en      DateTime @default(now())
   actualizado_en DateTime @updatedAt
 
-  // Relaciones
-  preferencias  preferencias?
-  entradas      entradas[]
-  grupos        grupos[]
+  // Relación 1:1 con preferencias
+  preferencias preferencias?
 
   @@map("usuarios")
 }
@@ -58,108 +56,4 @@ model password_reset_tokens {
   creado_en DateTime @default(now())
 
   @@map("password_reset_tokens")
-}
-
-// ============================================================
-// ENTRADAS (ANIME/MANGA)
-// Equivalente en Laravel: Tabla "entradas"
-// ============================================================
-model entradas {
-  id           Int       @id @default(autoincrement())
-  usuarioId    Int       @map("usuario_id")
-  medio        String    @db.VarChar(10) // 'anime' o 'manga'
-  malId        Int       @map("mal_id")
-  titulo       String    @db.VarChar(255)
-  img          String    @db.VarChar(500)
-  tipo         String?   @db.VarChar(50)
-  estado       String?   @db.VarChar(20)
-  progreso     Int       @default(0)
-  total        Int?      @default(0)
-  favorito     Boolean   @default(false)
-  puntuacion   Int?      @default(0)
-  notas        String?   @db.Text
-  fechaInicio  DateTime? @map("fecha_inicio")
-  fechaFin     DateTime? @map("fecha_fin")
-  agregado     DateTime  @default(now())
-  orden        Int       @default(0)
-  etiquetas    String[]  @default([])
-
-  // Relación con usuario
-  usuario usuarios @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-
-  // Relación con listas
-  lista_items lista_items[]
-
-  // Unique constraint: usuario no puede tener el mismo título 2 veces
-  @@unique([usuarioId, medio, malId])
-  @@index([usuarioId])
-  @@index([usuarioId, medio])
-  @@index([usuarioId, medio, estado])
-  @@map("entradas")
-}
-
-// ============================================================
-// GRUPOS DE LISTAS
-// Equivalente en Laravel: Tabla "grupos"
-// ============================================================
-model grupos {
-  id          Int      @id @default(autoincrement())
-  usuarioId   Int      @map("usuario_id")
-  titulo      String   @db.VarChar(100)
-  descripcion String?  @db.Text
-  etiquetas   String[] @default([])
-  creadoEn    DateTime @default(now()) @map("creado_en")
-  actualizadoEn DateTime @updatedAt @map("actualizado_en")
-
-  // Relación con usuario
-  usuario usuarios @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-
-  // Relación con listas
-  listas listas[]
-
-  @@index([usuarioId])
-  @@map("grupos")
-}
-
-// ============================================================
-// LISTAS (pertenecen a un grupo)
-// Equivalente en Laravel: Tabla "listas"
-// ============================================================
-model listas {
-  id           Int      @id @default(autoincrement())
-  grupoId      Int      @map("grupo_id")
-  nombre       String   @db.VarChar(100)
-  orden        Int      @default(0)
-  creadoEn     DateTime @default(now()) @map("creado_en")
-  actualizadoEn DateTime @updatedAt @map("actualizado_en")
-
-  // Relación con grupo
-  grupo grupos @relation(fields: [grupoId], references: [id], onDelete: Cascade)
-
-  // Relación con items
-  lista_items lista_items[]
-
-  @@index([grupoId])
-  @@map("listas")
-}
-
-// ============================================================
-// ITEMS DE LISTA (conecta listas con entradas)
-// Equivalente en Laravel: Tabla "lista_items"
-// ============================================================
-model lista_items {
-  id        Int  @id @default(autoincrement())
-  listaId   Int  @map("lista_id")
-  entradaId Int  @map("entrada_id")
-  orden     Int  @default(0)
-
-  // Relación con lista
-  lista listas @relation(fields: [listaId], references: [id], onDelete: Cascade)
-
-  // Relación con entrada
-  entrada entradas @relation(fields: [entradaId], references: [id], onDelete: Cascade)
-
-  // Unique constraint
-  @@unique([listaId, entradaId])
-  @@map("lista_items")
 }

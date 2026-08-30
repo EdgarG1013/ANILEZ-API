@@ -1,6 +1,6 @@
 import { IsEmail, IsString, MinLength, Matches } from 'class-validator';
 
-export class ResetPasswordDto {
+export class RestablecerContrasenaDto {
   @IsEmail()
   correo: string;
 
