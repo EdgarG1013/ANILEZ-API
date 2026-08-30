@@ -9,6 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { CorreoService } from './correo.service.js';
 import { RegistrarDto } from './dto/registrar.dto.js';
 import { IniciarSesionDto } from './dto/iniciar-sesion.dto.js';
 import { OlvidarContrasenaDto } from './dto/olvidar-contrasena.dto.js';
@@ -19,10 +20,11 @@ export class AutenticacionService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private correoService: CorreoService,
   ) {}
 
   // ============================================================
-  // REGISTRO
+  // REGISTRO (con envío de correo de verificación)
   // ============================================================
   async registrar(dto: RegistrarDto) {
     const existe = await this.prisma.usuarios.findUnique({
@@ -55,9 +57,22 @@ export class AutenticacionService {
       correo: usuario.correo,
     });
 
+    // Generar token de verificación y enviar correo
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    try {
+      await this.correoService.enviarCorreoVerificacion(
+        usuario.correo,
+        usuario.nombre,
+        verificationToken,
+      );
+    } catch {
+      // Si falla el envío, el usuario igual se registra
+      // El correo de verificación se puede reenviar después
+    }
+
     return {
       ok: true,
-      mensaje: 'Usuario registrado exitosamente',
+      mensaje: 'Usuario registrado exitosamente. Por favor, verifica tu correo electrónico.',
       data: {
         usuario: {
           id: usuario.id,
@@ -134,13 +149,14 @@ export class AutenticacionService {
   }
 
   // ============================================================
-  // OLVIDÓ CONTRASEÑA (genera token, retorna token directamente)
+  // OLVIDÓ CONTRASEÑA (genera token y envía correo)
   // ============================================================
   async olvidarContrasena(dto: OlvidarContrasenaDto) {
     const usuario = await this.prisma.usuarios.findUnique({
       where: { correo: dto.correo },
     });
 
+    // Respuesta genérica para no revelar si el email existe
     if (!usuario) {
       return {
         ok: true,
@@ -163,14 +179,25 @@ export class AutenticacionService {
       },
     });
 
-    // Por ahora retornamos el token directamente (sin envío de correo)
+    // Enviar correo con el token
+    try {
+      await this.correoService.enviarCorreoRestablecerContrasena(
+        usuario.correo,
+        usuario.nombre,
+        token,
+      );
+    } catch {
+      // Si falla el envío, retornamos el token para testing
+      return {
+        ok: true,
+        mensaje: 'Si existe una cuenta con ese correo, recibirás un enlace de restablecimiento',
+        data: { token },
+      };
+    }
+
     return {
       ok: true,
-      mensaje: 'Token de restablecimiento generado',
-      data: {
-        token,
-        nota: 'Este token se enviará por correo cuando se configure el servicio de email',
-      },
+      mensaje: 'Si existe una cuenta con ese correo, recibirás un enlace de restablecimiento',
     };
   }
 
