@@ -9,7 +9,6 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { CorreoService } from './correo.service.js';
 import { RegistrarDto } from './dto/registrar.dto.js';
 import { IniciarSesionDto } from './dto/iniciar-sesion.dto.js';
 import { OlvidarContrasenaDto } from './dto/olvidar-contrasena.dto.js';
@@ -20,12 +19,10 @@ export class AutenticacionService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
-    private correoService: CorreoService,
   ) {}
 
   // ============================================================
   // REGISTRO
-  // Equivalente en Laravel: AuthController@registrarse
   // ============================================================
   async registrar(dto: RegistrarDto) {
     const existe = await this.prisma.usuarios.findUnique({
@@ -58,16 +55,9 @@ export class AutenticacionService {
       correo: usuario.correo,
     });
 
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-    await this.correoService.enviarCorreoVerificacion(
-      usuario.correo,
-      usuario.nombre,
-      verificationToken,
-    );
-
     return {
       ok: true,
-      mensaje: 'Usuario registrado exitosamente. Por favor, verifica tu correo.',
+      mensaje: 'Usuario registrado exitosamente',
       data: {
         usuario: {
           id: usuario.id,
@@ -81,7 +71,6 @@ export class AutenticacionService {
 
   // ============================================================
   // INICIAR SESIÓN
-  // Equivalente en Laravel: AuthController@login
   // ============================================================
   async iniciarSesion(dto: IniciarSesionDto) {
     const usuario = await this.prisma.usuarios.findUnique({
@@ -120,7 +109,6 @@ export class AutenticacionService {
 
   // ============================================================
   // PERFIL (usuario autenticado)
-  // Equivalente en Laravel: AuthController@usuario
   // ============================================================
   async obtenerPerfil(usuarioId: number) {
     const usuario = await this.prisma.usuarios.findUnique({
@@ -146,8 +134,7 @@ export class AutenticacionService {
   }
 
   // ============================================================
-  // OLVIDÓ CONTRASEÑA
-  // Equivalente en Laravel: AuthController@solicitarRestablecimiento
+  // OLVIDÓ CONTRASEÑA (genera token, retorna token directamente)
   // ============================================================
   async olvidarContrasena(dto: OlvidarContrasenaDto) {
     const usuario = await this.prisma.usuarios.findUnique({
@@ -176,21 +163,19 @@ export class AutenticacionService {
       },
     });
 
-    await this.correoService.enviarCorreoRestablecerContrasena(
-      usuario.correo,
-      usuario.nombre,
-      token,
-    );
-
+    // Por ahora retornamos el token directamente (sin envío de correo)
     return {
       ok: true,
-      mensaje: 'Si existe una cuenta con ese correo, recibirás un enlace de restablecimiento',
+      mensaje: 'Token de restablecimiento generado',
+      data: {
+        token,
+        nota: 'Este token se enviará por correo cuando se configure el servicio de email',
+      },
     };
   }
 
   // ============================================================
   // RESTABLECER CONTRASEÑA
-  // Equivalente en Laravel: AuthController@restablecerContrasena
   // ============================================================
   async restablecerContrasena(dto: RestablecerContrasenaDto) {
     const resetToken = await this.prisma.password_reset_tokens.findUnique({
@@ -235,7 +220,6 @@ export class AutenticacionService {
 
   // ============================================================
   // CERRAR SESIÓN
-  // Equivalente en Laravel: AuthController@logout
   // ============================================================
   async cerrarSesion() {
     return {

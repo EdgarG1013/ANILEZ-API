@@ -6,7 +6,6 @@
 # zzz
 .agents
 docs
-prisma/generated/
 .env
 env
 
@@ -61,5 +60,3 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
-
-/src/generated/prisma
