@@ -9,16 +9,18 @@ datasource db {
 
 // ============================================================
 // MODELO DE USUARIO
-// Equivalente en Laravel: app/Models/User.php + migraciones
 // ============================================================
 model usuarios {
-  id             Int      @id @default(autoincrement())
-  nombre         String   @db.VarChar(30)
-  correo         String   @unique @db.VarChar(255)
-  password       String   @db.VarChar(255)
-  avatar         String?  @db.Text
-  creado_en      DateTime @default(now())
-  actualizado_en DateTime @updatedAt
+  id                 String   @id @default(uuid()) @db.Uuid
+  nombre             String   @db.VarChar(30)
+  correo             String   @unique @db.VarChar(255)
+  password           String?  @db.VarChar(255)
+  avatar             String?  @db.Text
+  google_id          String?  @unique @db.VarChar(255)
+  discord_id         String?  @unique @db.VarChar(255)
+  email_verificado_en DateTime?
+  creado_en          DateTime @default(now())
+  actualizado_en     DateTime @updatedAt
 
   // Relación 1:1 con preferencias
   preferencias preferencias?
@@ -28,11 +30,10 @@ model usuarios {
 
 // ============================================================
 // PREFERENCIAS DE USUARIO
-// Equivalente en Laravel: Tabla "preferencias" (1:1 con usuario)
 // ============================================================
 model preferencias {
-  id           Int      @id @default(autoincrement())
-  usuarioId    Int      @unique @map("usuario_id")
+  id           String   @id @default(uuid()) @db.Uuid
+  usuarioId    String   @unique @map("usuario_id") @db.Uuid
   sfw          Boolean  @default(true)
   creadoEn     DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
@@ -45,7 +46,6 @@ model preferencias {
 
 // ============================================================
 // TOKENS DE RESETEO DE CONTRASEÑA
-// Equivalente en Laravel: tabla "password_reset_tokens"
 // ============================================================
 model password_reset_tokens {
   email     String   @id

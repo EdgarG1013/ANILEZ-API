@@ -14,6 +14,7 @@ import { RegistrarDto } from './dto/registrar.dto.js';
 import { IniciarSesionDto } from './dto/iniciar-sesion.dto.js';
 import { OlvidarContrasenaDto } from './dto/olvidar-contrasena.dto.js';
 import { RestablecerContrasenaDto } from './dto/restablecer-contrasena.dto.js';
+import { hashToken, unhashToken } from './utils/token.util.js';
 
 @Injectable()
 export class AutenticacionService {
@@ -58,7 +59,7 @@ export class AutenticacionService {
     });
 
     // Generar token de verificación y enviar correo
-    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationToken = hashToken(usuario.correo);
     try {
       await this.correoService.enviarCorreoVerificacion(
         usuario.correo,
@@ -67,7 +68,6 @@ export class AutenticacionService {
       );
     } catch {
       // Si falla el envío, el usuario igual se registra
-      // El correo de verificación se puede reenviar después
     }
 
     return {
@@ -85,7 +85,39 @@ export class AutenticacionService {
   }
 
   // ============================================================
-  // INICIAR SESIÓN
+  // VERIFICAR EMAIL
+  // ============================================================
+  async verificarEmail(token: string) {
+    const email = unhashToken(token);
+
+    const usuario = await this.prisma.usuarios.findUnique({
+      where: { correo: email },
+    });
+
+    if (!usuario) {
+      throw new BadRequestException('Token de verificación inválido');
+    }
+
+    if (usuario.email_verificado_en) {
+      return {
+        ok: true,
+        mensaje: 'El correo ya fue verificado anteriormente',
+      };
+    }
+
+    await this.prisma.usuarios.update({
+      where: { id: usuario.id },
+      data: { email_verificado_en: new Date() },
+    });
+
+    return {
+      ok: true,
+      mensaje: 'Correo electrónico verificado exitosamente',
+    };
+  }
+
+  // ============================================================
+  // INICIAR SESIÓN (requiere email verificado)
   // ============================================================
   async iniciarSesion(dto: IniciarSesionDto) {
     const usuario = await this.prisma.usuarios.findUnique({
@@ -96,10 +128,18 @@ export class AutenticacionService {
       throw new UnauthorizedException('El correo electrónico o la contraseña son incorrectos');
     }
 
+    if (!usuario.password) {
+      throw new UnauthorizedException('Esta cuenta fue creada con un proveedor externo. Usa Google o Discord para iniciar sesión.');
+    }
+
     const passwordValido = await bcrypt.compare(dto.password, usuario.password);
 
     if (!passwordValido) {
       throw new UnauthorizedException('El correo electrónico o la contraseña son incorrectos');
+    }
+
+    if (!usuario.email_verificado_en) {
+      throw new UnauthorizedException('Debes verificar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada.');
     }
 
     const token = this.jwtService.sign({
@@ -125,7 +165,7 @@ export class AutenticacionService {
   // ============================================================
   // PERFIL (usuario autenticado)
   // ============================================================
-  async obtenerPerfil(usuarioId: number) {
+  async obtenerPerfil(usuarioId: string) {
     const usuario = await this.prisma.usuarios.findUnique({
       where: { id: usuarioId },
       select: {
@@ -133,6 +173,7 @@ export class AutenticacionService {
         nombre: true,
         correo: true,
         avatar: true,
+        email_verificado_en: true,
         creado_en: true,
         preferencias: true,
       },
@@ -156,7 +197,6 @@ export class AutenticacionService {
       where: { correo: dto.correo },
     });
 
-    // Respuesta genérica para no revelar si el email existe
     if (!usuario) {
       return {
         ok: true,
@@ -179,7 +219,6 @@ export class AutenticacionService {
       },
     });
 
-    // Enviar correo con el token
     try {
       await this.correoService.enviarCorreoRestablecerContrasena(
         usuario.correo,
@@ -187,7 +226,6 @@ export class AutenticacionService {
         token,
       );
     } catch {
-      // Si falla el envío, retornamos el token para testing
       return {
         ok: true,
         mensaje: 'Si existe una cuenta con ese correo, recibirás un enlace de restablecimiento',

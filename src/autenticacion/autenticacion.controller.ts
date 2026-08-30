@@ -13,6 +13,7 @@ import { RegistrarDto } from './dto/registrar.dto.js';
 import { IniciarSesionDto } from './dto/iniciar-sesion.dto.js';
 import { OlvidarContrasenaDto } from './dto/olvidar-contrasena.dto.js';
 import { RestablecerContrasenaDto } from './dto/restablecer-contrasena.dto.js';
+import { VerificarEmailDto } from './dto/verificar-email.dto.js';
 import { JwtGuard } from './guards/jwt-auth.guard.js';
 
 @Controller('auth')
@@ -25,6 +26,13 @@ export class AutenticacionController {
     return this.autenticacionService.registrar(dto);
   }
 
+  // POST /auth/verificar-email
+  @Post('verificar-email')
+  @HttpCode(HttpStatus.OK)
+  verificarEmail(@Body() dto: VerificarEmailDto) {
+    return this.autenticacionService.verificarEmail(dto.token);
+  }
+
   // POST /auth/iniciar-sesion
   @Post('iniciar-sesion')
   @HttpCode(HttpStatus.OK)
@@ -35,7 +43,7 @@ export class AutenticacionController {
   // GET /auth/perfil (protegido)
   @UseGuards(JwtGuard)
   @Get('perfil')
-  obtenerPerfil(@Request() req: { user: { id: number } }) {
+  obtenerPerfil(@Request() req: { user: { id: string } }) {
     return this.autenticacionService.obtenerPerfil(req.user.id);
   }
 

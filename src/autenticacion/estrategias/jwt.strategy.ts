@@ -4,7 +4,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from '../../prisma/prisma.service.js';
 
 export interface JwtPayload {
-  sub: number;
+  sub: string;
   correo: string;
 }
 
