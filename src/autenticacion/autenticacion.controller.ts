@@ -7,7 +7,9 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { AutenticacionService } from './autenticacion.service.js';
 import { RegistrarDto } from './dto/registrar.dto.js';
 import { IniciarSesionDto } from './dto/iniciar-sesion.dto.js';
@@ -15,10 +17,16 @@ import { OlvidarContrasenaDto } from './dto/olvidar-contrasena.dto.js';
 import { RestablecerContrasenaDto } from './dto/restablecer-contrasena.dto.js';
 import { VerificarEmailDto } from './dto/verificar-email.dto.js';
 import { JwtGuard } from './guards/jwt-auth.guard.js';
+import { GoogleGuard } from './guards/google.guard.js';
+import { DiscordGuard } from './guards/discord.guard.js';
 
 @Controller('auth')
 export class AutenticacionController {
   constructor(private readonly autenticacionService: AutenticacionService) {}
+
+  // ============================================================
+  // ENDPOINTS TRADICIONALES
+  // ============================================================
 
   // POST /auth/registrar
   @Post('registrar')
@@ -67,5 +75,67 @@ export class AutenticacionController {
   @HttpCode(HttpStatus.OK)
   cerrarSesion() {
     return this.autenticacionService.cerrarSesion();
+  }
+
+  // ============================================================
+  // OAUTH — GOOGLE
+  // ============================================================
+
+  // GET /auth/google → Redirige a Google para autenticar
+  @Get('google')
+  @UseGuards(GoogleGuard)
+  googleAuth() {
+    // Passport redirige automáticamente a Google
+  }
+
+  // GET /auth/google/callback → Google redirige aquí después de autenticar
+  @Get('google/callback')
+  @UseGuards(GoogleGuard)
+  async googleCallback(
+    @Request() req: { user: any },
+    @Res() res: Response,
+  ) {
+    const resultado = await this.autenticacionService.loginConProveedor({
+      provider: 'google',
+      providerId: req.user.providerId,
+      email: req.user.email,
+      nombre: req.user.nombre,
+      avatar: req.user.avatar,
+    });
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const token = resultado.data.token;
+    res.redirect(`${frontendUrl}/auth/callback?token=${token}`);
+  }
+
+  // ============================================================
+  // OAUTH — DISCORD
+  // ============================================================
+
+  // GET /auth/discord → Redirige a Discord para autenticar
+  @Get('discord')
+  @UseGuards(DiscordGuard)
+  discordAuth() {
+    // Passport redirige automáticamente a Discord
+  }
+
+  // GET /auth/discord/callback → Discord redirige aquí después de autenticar
+  @Get('discord/callback')
+  @UseGuards(DiscordGuard)
+  async discordCallback(
+    @Request() req: { user: any },
+    @Res() res: Response,
+  ) {
+    const resultado = await this.autenticacionService.loginConProveedor({
+      provider: 'discord',
+      providerId: req.user.providerId,
+      email: req.user.email,
+      nombre: req.user.nombre,
+      avatar: req.user.avatar,
+    });
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const token = resultado.data.token;
+    res.redirect(`${frontendUrl}/auth/callback?token=${token}`);
   }
 }

@@ -292,4 +292,91 @@ export class AutenticacionService {
       mensaje: 'Sesión cerrada exitosamente',
     };
   }
+
+  // ============================================================
+  // LOGIN CON PROVEEDOR (Google / Discord)
+  // ============================================================
+  async loginConProveedor(profile: {
+    provider: 'google' | 'discord';
+    providerId: string;
+    email: string | null;
+    nombre: string;
+    avatar: string | null;
+  }) {
+    const { provider, providerId, email, nombre, avatar } = profile;
+
+    // 1. Buscar por provider_id
+    const whereClause =
+      provider === 'google'
+        ? { google_id: providerId }
+        : { discord_id: providerId };
+
+    let usuario = await this.prisma.usuarios.findFirst({
+      where: whereClause,
+    });
+
+    // 2. Si no existe, buscar por correo
+    if (!usuario && email) {
+      usuario = await this.prisma.usuarios.findUnique({
+        where: { correo: email },
+      });
+
+      // Vincular la cuenta existente al proveedor
+      if (usuario) {
+        const updateData =
+          provider === 'google'
+            ? { google_id: providerId }
+            : { discord_id: providerId };
+
+        usuario = await this.prisma.usuarios.update({
+          where: { id: usuario.id },
+          data: updateData,
+        });
+      }
+    }
+
+    // 3. Si no existe, crear usuario nuevo
+    if (!usuario) {
+      if (!email) {
+        throw new BadRequestException(
+          `No se pudo obtener el correo electrónico de ${provider}. Asegúrate de tener un correo asociado.`,
+        );
+      }
+
+      usuario = await this.prisma.usuarios.create({
+        data: {
+          nombre,
+          correo: email,
+          avatar,
+          google_id: provider === 'google' ? providerId : undefined,
+          discord_id: provider === 'discord' ? providerId : undefined,
+          email_verificado_en: new Date(),
+        },
+      });
+
+      await this.prisma.preferencias.create({
+        data: { usuarioId: usuario.id },
+      });
+    }
+
+    // 4. Generar JWT
+    const token = this.jwtService.sign({
+      sub: usuario.id,
+      correo: usuario.correo,
+    });
+
+    return {
+      ok: true,
+      mensaje: 'Inicio de sesión exitoso',
+      data: {
+        usuario: {
+          id: usuario.id,
+          nombre: usuario.nombre,
+          correo: usuario.correo,
+          avatar: usuario.avatar,
+        },
+        token,
+      },
+    };
+  }
 }
