@@ -1,38 +1,45 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../prisma/generated/prisma"
 }
 
 datasource db {
   provider  = "postgresql"
+  url       = env("DATABASE_URL")
 }
 
 // ============================================================
 // MODELO DE USUARIO
-// Equivalente en Laravel: app/Models/User.php + migraciones
 // ============================================================
 model usuarios {
-  id             Int      @id @default(autoincrement())
-  nombre         String   @db.VarChar(30)
-  correo         String   @unique @db.VarChar(255)
-  password       String   @db.VarChar(255)
-  avatar         String?  @db.Text
-  creado_en      DateTime @default(now())
-  actualizado_en DateTime @updatedAt
+  id                 String   @id @default(uuid()) @db.Uuid
+  nombre             String   @db.VarChar(30)
+  correo             String   @unique @db.VarChar(255)
+  password           String?  @db.VarChar(255)
+  avatar             String?  @db.Text
+  google_id          String?  @unique @db.VarChar(255)
+  discord_id         String?  @unique @db.VarChar(255)
+  email_verificado_en DateTime?
+  creado_en          DateTime @default(now())
+  actualizado_en     DateTime @updatedAt
 
   // Relación 1:1 con preferencias
   preferencias preferencias?
+
+  // Relación 1:N con listas
+  listas lista[]
+
+  // Relación 1:N con grupos
+  grupos grupo[]
 
   @@map("usuarios")
 }
 
 // ============================================================
 // PREFERENCIAS DE USUARIO
-// Equivalente en Laravel: Tabla "preferencias" (1:1 con usuario)
 // ============================================================
 model preferencias {
-  id           Int      @id @default(autoincrement())
-  usuarioId    Int      @unique @map("usuario_id")
+  id           String   @id @default(uuid()) @db.Uuid
+  usuarioId    String   @unique @map("usuario_id") @db.Uuid
   sfw          Boolean  @default(true)
   creadoEn     DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
@@ -45,7 +52,6 @@ model preferencias {
 
 // ============================================================
 // TOKENS DE RESETEO DE CONTRASEÑA
-// Equivalente en Laravel: tabla "password_reset_tokens"
 // ============================================================
 model password_reset_tokens {
   email     String   @id
@@ -54,4 +60,124 @@ model password_reset_tokens {
   creado_en DateTime @default(now())
 
   @@map("password_reset_tokens")
+}
+
+// ============================================================
+// LISTAS DE ANIME Y MANGA
+// ============================================================
+model lista {
+  id            String   @id @default(uuid()) @db.Uuid
+  usuarioId     String   @map("usuario_id") @db.Uuid
+  tenraiId      String   @map("tenrai_id") @db.VarChar(50)
+  medio         String   @db.VarChar(10)
+  estado        String   @db.VarChar(20)
+  progreso      Int      @default(0)
+  favorito      Boolean  @default(false)
+  puntuacion    Int      @default(0)
+  notas         String?  @db.Text
+  fechaInicio   DateTime? @map("fecha_inicio")
+  fechaFin      DateTime? @map("fecha_fin")
+  orden         Int      @default(0)
+  etiquetas     String[]
+  datosJson     Json     @map("datos_json")
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  usuario  usuarios @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  recursos recursos_multimedia[]
+
+  @@unique([usuarioId, tenraiId, medio])
+  @@index([usuarioId])
+  @@map("listas")
+}
+
+// ============================================================
+// RECURSOS MULTIMEDIA (respaldo de imágenes)
+// ============================================================
+model recursos_multimedia {
+  id          String   @id @default(uuid()) @db.Uuid
+  listaId     String   @map("lista_id") @db.Uuid
+  tipoImagen  String   @map("tipo_imagen") @db.VarChar(20)
+  urlOriginal String?  @map("url_original") @db.Text
+  urlSupabase String   @map("url_supabase") @db.Text
+  creadoEn    DateTime @default(now()) @map("creado_en")
+
+  lista lista @relation(fields: [listaId], references: [id], onDelete: Cascade)
+
+  @@index([listaId])
+  @@map("recursos_multimedia")
+}
+
+// ============================================================
+// GRUPOS DE COLECCIONES
+// ============================================================
+model grupo {
+  id          String   @id @default(uuid()) @db.Uuid
+  usuarioId   String   @map("usuario_id") @db.Uuid
+  titulo      String   @db.VarChar(100)
+  descripcion String   @default("") @db.Text
+  portadaUrl  String?  @map("portada_url") @db.Text
+  etiquetas   String[]
+  creadoEn    DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  usuario  usuarios       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  listas   grupo_listas[]
+  externos grupo_externos[]
+
+  @@index([usuarioId])
+  @@map("grupos")
+}
+
+// ============================================================
+// LISTAS PERSONALIZADAS DENTRO DE UN GRUPO
+// ============================================================
+model grupo_listas {
+  id        String @id @default(uuid()) @db.Uuid
+  grupoId   String @map("grupo_id") @db.Uuid
+  nombre    String @db.VarChar(100)
+  orden     Int    @default(0)
+
+  grupo  grupo              @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  items  grupo_lista_items[]
+
+  @@index([grupoId])
+  @@map("grupo_listas")
+}
+
+// ============================================================
+// ITEMS DENTRO DE UNA LISTA PERSONALIZADA
+// ============================================================
+model grupo_lista_items {
+  id            String @id @default(uuid()) @db.Uuid
+  grupoListaId  String @map("grupo_lista_id") @db.Uuid
+  medio         String @db.VarChar(10)
+  tenraiId      String @map("tenrai_id") @db.VarChar(50)
+  orden         Int    @default(0)
+
+  grupoLista grupo_listas @relation(fields: [grupoListaId], references: [id], onDelete: Cascade)
+
+  @@unique([grupoListaId, medio, tenraiId])
+  @@index([grupoListaId])
+  @@map("grupo_lista_items")
+}
+
+// ============================================================
+// ITEMS EXTERNOS (no están en la biblioteca del usuario)
+// ============================================================
+model grupo_externos {
+  id        String @id @default(uuid()) @db.Uuid
+  grupoId   String @map("grupo_id") @db.Uuid
+  clave     String @db.VarChar(100)
+  medio     String @db.VarChar(10)
+  tenraiId  String @map("tenrai_id") @db.VarChar(50)
+  titulo    String @db.VarChar(255)
+  img       String @default("") @db.Text
+  tipo      String @default("") @db.VarChar(50)
+
+  grupo grupo @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+
+  @@unique([grupoId, clave])
+  @@index([grupoId])
+  @@map("grupo_externos")
 }

@@ -4,6 +4,9 @@ import { PassportModule } from '@nestjs/passport';
 import { AutenticacionController } from './autenticacion.controller.js';
 import { AutenticacionService } from './autenticacion.service.js';
 import { JwtEstrategia } from './estrategias/jwt.strategy.js';
+import { GoogleEstrategia } from './estrategias/google.strategy.js';
+import { DiscordEstrategia } from './estrategias/discord.strategy.js';
+import { CorreoService } from './correo.service.js';
 
 @Module({
   imports: [
@@ -14,7 +17,13 @@ import { JwtEstrategia } from './estrategias/jwt.strategy.js';
     }),
   ],
   controllers: [AutenticacionController],
-  providers: [AutenticacionService, JwtEstrategia],
-  exports: [AutenticacionService, JwtModule],
+  providers: [
+    AutenticacionService,
+    JwtEstrategia,
+    GoogleEstrategia,
+    DiscordEstrategia,
+    CorreoService,
+  ],
+  exports: [AutenticacionService, JwtModule, PassportModule],
 })
 export class AutenticacionModule {}

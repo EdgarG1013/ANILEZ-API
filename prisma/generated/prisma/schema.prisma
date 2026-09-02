@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../prisma/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// MODELO DE USUARIO
+// Equivalente en Laravel: app/Models/User.php + migraciones
+// ============================================================
+model usuarios {
+  id             Int      @id @default(autoincrement())
+  nombre         String   @db.VarChar(30)
+  correo         String   @unique @db.VarChar(255)
+  password       String   @db.VarChar(255)
+  avatar         String?  @db.Text
+  creado_en      DateTime @default(now())
+  actualizado_en DateTime @updatedAt
+
+  // Relación 1:1 con preferencias
+  preferencias preferencias?
+
+  @@map("usuarios")
+}
+
+// ============================================================
+// PREFERENCIAS DE USUARIO
+// Equivalente en Laravel: Tabla "preferencias" (1:1 con usuario)
+// ============================================================
+model preferencias {
+  id            Int      @id @default(autoincrement())
+  usuarioId     Int      @unique @map("usuario_id")
+  sfw           Boolean  @default(true)
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  // Relación 1:1 con usuario
+  usuario usuarios @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("preferencias")
+}
+
+// ============================================================
+// TOKENS DE RESETEO DE CONTRASEÑA
+// Equivalente en Laravel: tabla "password_reset_tokens"
+// ============================================================
+model password_reset_tokens {
+  email     String   @id
+  token     String   @db.VarChar(255)
+  usado     Boolean  @default(false)
+  creado_en DateTime @default(now())
+
+  @@map("password_reset_tokens")
+}
