@@ -4,8 +4,11 @@ import {
   UnauthorizedException,
   BadRequestException,
   NotFoundException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -18,11 +21,19 @@ import { hashToken, unhashToken } from './utils/token.util.js';
 
 @Injectable()
 export class AutenticacionService {
+  private supabase: SupabaseClient;
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
     private correoService: CorreoService,
-  ) {}
+    private config: ConfigService,
+  ) {
+    this.supabase = createClient(
+      this.config.get<string>('SUPABASE_URL')!,
+      this.config.get<string>('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+  }
 
   // ============================================================
   // REGISTRO (con envío de correo de verificación)
@@ -377,6 +388,56 @@ export class AutenticacionService {
         },
         token,
       },
+    };
+  }
+
+  // ============================================================
+  // SUBIR AVATAR
+  // ============================================================
+  async subirAvatar(usuarioId: string, archivo: Buffer, nombreArchivo: string, contentType: string) {
+    // Eliminar avatar anterior si existe
+    const usuario = await this.prisma.usuarios.findUnique({ where: { id: usuarioId } });
+    if (usuario?.avatar) {
+      try {
+        const urlParts = usuario.avatar.split('/');
+        const bucketIndex = urlParts.indexOf('avatars');
+        if (bucketIndex !== -1) {
+          const filePath = urlParts.slice(bucketIndex + 1).join('/');
+          await this.supabase.storage.from('avatars').remove([filePath]);
+        }
+      } catch {
+        // Ignorar errores al eliminar avatar anterior
+      }
+    }
+
+    const extension = nombreArchivo.split('.').pop() || 'jpg';
+    const filePath = `${usuarioId}.${extension}`;
+
+    const { error: uploadError } = await this.supabase.storage
+      .from('avatars')
+      .upload(filePath, archivo, {
+        contentType,
+        upsert: true,
+      });
+
+    if (uploadError) {
+      throw new InternalServerErrorException(`Error subiendo avatar: ${uploadError.message}`);
+    }
+
+    const { data: urlData } = this.supabase.storage
+      .from('avatars')
+      .getPublicUrl(filePath);
+
+    const avatarUrl = urlData.publicUrl;
+
+    await this.prisma.usuarios.update({
+      where: { id: usuarioId },
+      data: { avatar: avatarUrl },
+    });
+
+    return {
+      ok: true,
+      avatar: avatarUrl,
     };
   }
 }

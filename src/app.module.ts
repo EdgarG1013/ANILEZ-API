@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { AutenticacionModule } from './autenticacion/autenticacion.module.js';
 import { ListaModule } from './lista/lista.module.js';
+import { GrupoModule } from './grupo/grupo.module.js';
 
 @Module({
   imports: [
@@ -10,6 +11,7 @@ import { ListaModule } from './lista/lista.module.js';
     PrismaModule,
     AutenticacionModule,
     ListaModule,
+    GrupoModule,
   ],
   controllers: [],
   providers: [],

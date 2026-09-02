@@ -28,6 +28,9 @@ model usuarios {
   // Relación 1:N con listas
   listas lista[]
 
+  // Relación 1:N con grupos
+  grupos grupo[]
+
   @@map("usuarios")
 }
 
@@ -103,4 +106,78 @@ model recursos_multimedia {
 
   @@index([listaId])
   @@map("recursos_multimedia")
+}
+
+// ============================================================
+// GRUPOS DE COLECCIONES
+// ============================================================
+model grupo {
+  id          String   @id @default(uuid()) @db.Uuid
+  usuarioId   String   @map("usuario_id") @db.Uuid
+  titulo      String   @db.VarChar(100)
+  descripcion String   @default("") @db.Text
+  portadaUrl  String?  @map("portada_url") @db.Text
+  etiquetas   String[]
+  creadoEn    DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  usuario  usuarios       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  listas   grupo_listas[]
+  externos grupo_externos[]
+
+  @@index([usuarioId])
+  @@map("grupos")
+}
+
+// ============================================================
+// LISTAS PERSONALIZADAS DENTRO DE UN GRUPO
+// ============================================================
+model grupo_listas {
+  id        String @id @default(uuid()) @db.Uuid
+  grupoId   String @map("grupo_id") @db.Uuid
+  nombre    String @db.VarChar(100)
+  orden     Int    @default(0)
+
+  grupo  grupo              @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  items  grupo_lista_items[]
+
+  @@index([grupoId])
+  @@map("grupo_listas")
+}
+
+// ============================================================
+// ITEMS DENTRO DE UNA LISTA PERSONALIZADA
+// ============================================================
+model grupo_lista_items {
+  id            String @id @default(uuid()) @db.Uuid
+  grupoListaId  String @map("grupo_lista_id") @db.Uuid
+  medio         String @db.VarChar(10)
+  tenraiId      String @map("tenrai_id") @db.VarChar(50)
+  orden         Int    @default(0)
+
+  grupoLista grupo_listas @relation(fields: [grupoListaId], references: [id], onDelete: Cascade)
+
+  @@unique([grupoListaId, medio, tenraiId])
+  @@index([grupoListaId])
+  @@map("grupo_lista_items")
+}
+
+// ============================================================
+// ITEMS EXTERNOS (no están en la biblioteca del usuario)
+// ============================================================
+model grupo_externos {
+  id        String @id @default(uuid()) @db.Uuid
+  grupoId   String @map("grupo_id") @db.Uuid
+  clave     String @db.VarChar(100)
+  medio     String @db.VarChar(10)
+  tenraiId  String @map("tenrai_id") @db.VarChar(50)
+  titulo    String @db.VarChar(255)
+  img       String @default("") @db.Text
+  tipo      String @default("") @db.VarChar(50)
+
+  grupo grupo @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+
+  @@unique([grupoId, clave])
+  @@index([grupoId])
+  @@map("grupo_externos")
 }

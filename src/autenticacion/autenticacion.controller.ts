@@ -2,13 +2,17 @@ import {
   Controller,
   Post,
   Get,
+  Patch,
   Body,
   UseGuards,
   Request,
   HttpCode,
   HttpStatus,
   Res,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { AutenticacionService } from './autenticacion.service.js';
 import { RegistrarDto } from './dto/registrar.dto.js';
@@ -75,6 +79,22 @@ export class AutenticacionController {
   @HttpCode(HttpStatus.OK)
   cerrarSesion() {
     return this.autenticacionService.cerrarSesion();
+  }
+
+  // PATCH /auth/avatar (protegido) — Subir foto de perfil
+  @UseGuards(JwtGuard)
+  @Patch('avatar')
+  @UseInterceptors(FileInterceptor('archivo'))
+  async subirAvatar(
+    @Request() req: { user: { id: string } },
+    @UploadedFile() archivo: any,
+  ) {
+    return this.autenticacionService.subirAvatar(
+      req.user.id,
+      archivo.buffer,
+      archivo.originalname,
+      archivo.mimetype,
+    );
   }
 
   // ============================================================
