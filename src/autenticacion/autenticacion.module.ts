@@ -24,6 +24,6 @@ import { CorreoService } from './correo.service.js';
     DiscordEstrategia,
     CorreoService,
   ],
-  exports: [AutenticacionService, JwtModule],
+  exports: [AutenticacionService, JwtModule, PassportModule],
 })
 export class AutenticacionModule {}

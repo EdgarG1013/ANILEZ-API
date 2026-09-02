@@ -25,6 +25,9 @@ model usuarios {
   // Relación 1:1 con preferencias
   preferencias preferencias?
 
+  // Relación 1:N con listas
+  listas lista[]
+
   @@map("usuarios")
 }
 
@@ -54,4 +57,50 @@ model password_reset_tokens {
   creado_en DateTime @default(now())
 
   @@map("password_reset_tokens")
+}
+
+// ============================================================
+// LISTAS DE ANIME Y MANGA
+// ============================================================
+model lista {
+  id            String   @id @default(uuid()) @db.Uuid
+  usuarioId     String   @map("usuario_id") @db.Uuid
+  tenraiId      String   @map("tenrai_id") @db.VarChar(50)
+  medio         String   @db.VarChar(10)
+  estado        String   @db.VarChar(20)
+  progreso      Int      @default(0)
+  favorito      Boolean  @default(false)
+  puntuacion    Int      @default(0)
+  notas         String?  @db.Text
+  fechaInicio   DateTime? @map("fecha_inicio")
+  fechaFin      DateTime? @map("fecha_fin")
+  orden         Int      @default(0)
+  etiquetas     String[]
+  datosJson     Json     @map("datos_json")
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  usuario  usuarios @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  recursos recursos_multimedia[]
+
+  @@unique([usuarioId, tenraiId, medio])
+  @@index([usuarioId])
+  @@map("listas")
+}
+
+// ============================================================
+// RECURSOS MULTIMEDIA (respaldo de imágenes)
+// ============================================================
+model recursos_multimedia {
+  id          String   @id @default(uuid()) @db.Uuid
+  listaId     String   @map("lista_id") @db.Uuid
+  tipoImagen  String   @map("tipo_imagen") @db.VarChar(20)
+  urlOriginal String?  @map("url_original") @db.Text
+  urlSupabase String   @map("url_supabase") @db.Text
+  creadoEn    DateTime @default(now()) @map("creado_en")
+
+  lista lista @relation(fields: [listaId], references: [id], onDelete: Cascade)
+
+  @@index([listaId])
+  @@map("recursos_multimedia")
 }
