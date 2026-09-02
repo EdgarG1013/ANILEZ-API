@@ -20,6 +20,7 @@ import { IniciarSesionDto } from './dto/iniciar-sesion.dto.js';
 import { OlvidarContrasenaDto } from './dto/olvidar-contrasena.dto.js';
 import { RestablecerContrasenaDto } from './dto/restablecer-contrasena.dto.js';
 import { VerificarEmailDto } from './dto/verificar-email.dto.js';
+import { ActualizarPreferenciasDto } from './dto/actualizar-preferencias.dto.js';
 import { JwtGuard } from './guards/jwt-auth.guard.js';
 import { GoogleGuard } from './guards/google.guard.js';
 import { DiscordGuard } from './guards/discord.guard.js';
@@ -79,6 +80,19 @@ export class AutenticacionController {
   @HttpCode(HttpStatus.OK)
   cerrarSesion() {
     return this.autenticacionService.cerrarSesion();
+  }
+
+  // PATCH /auth/preferencias (protegido) — Actualizar preferencias
+  @UseGuards(JwtGuard)
+  @Patch('preferencias')
+  actualizarPreferencias(
+    @Request() req: { user: { id: string } },
+    @Body() dto: ActualizarPreferenciasDto,
+  ) {
+    return this.autenticacionService.actualizarPreferencias(
+      req.user.id,
+      dto.sfw,
+    );
   }
 
   // PATCH /auth/avatar (protegido) — Subir foto de perfil

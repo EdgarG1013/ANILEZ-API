@@ -334,10 +334,14 @@ export class AutenticacionService {
 
       // Vincular la cuenta existente al proveedor
       if (usuario) {
-        const updateData =
+        const updateData: Record<string, unknown> =
           provider === 'google'
             ? { google_id: providerId }
             : { discord_id: providerId };
+
+        if (avatar && !usuario.avatar) {
+          updateData.avatar = avatar;
+        }
 
         usuario = await this.prisma.usuarios.update({
           where: { id: usuario.id },
@@ -392,6 +396,25 @@ export class AutenticacionService {
   }
 
   // ============================================================
+  // ACTUALIZAR PREFERENCIAS
+  // ============================================================
+  async actualizarPreferencias(usuarioId: string, sfw?: boolean) {
+    const updateData: Record<string, unknown> = {};
+    if (sfw !== undefined) updateData.sfw = sfw;
+
+    const preferencias = await this.prisma.preferencias.upsert({
+      where: { usuarioId },
+      update: updateData,
+      create: { usuarioId, sfw: sfw ?? true },
+    });
+
+    return {
+      ok: true,
+      preferencias,
+    };
+  }
+
+  // ============================================================
   // SUBIR AVATAR
   // ============================================================
   async subirAvatar(usuarioId: string, archivo: Buffer, nombreArchivo: string, contentType: string) {
@@ -437,7 +460,7 @@ export class AutenticacionService {
 
     return {
       ok: true,
-      avatar: avatarUrl,
+      avatar: `${avatarUrl}?t=${Date.now()}`,
     };
   }
 }
