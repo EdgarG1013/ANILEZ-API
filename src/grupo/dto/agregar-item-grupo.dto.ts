@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional, IsIn } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsOptional, IsIn, IsObject } from 'class-validator';
 
 export class AgregarItemGrupoDto {
   @IsString()
@@ -13,16 +13,8 @@ export class AgregarItemGrupoDto {
   @IsNumber()
   orden?: number;
 
-  // Campos solo para items externos
+  // Metadata del catálogo solo para items externos
   @IsOptional()
-  @IsString()
-  titulo?: string;
-
-  @IsOptional()
-  @IsString()
-  img?: string;
-
-  @IsOptional()
-  @IsString()
-  tipo?: string;
+  @IsObject()
+  datosCatalogo?: Record<string, unknown>;
 }
