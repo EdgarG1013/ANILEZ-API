@@ -1,6 +1,7 @@
 import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import axios from 'axios';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CrearGrupoDto } from './dto/crear-grupo.dto.js';
 import { ActualizarGrupoDto } from './dto/actualizar-grupo.dto.js';
@@ -42,6 +43,56 @@ export class GrupoService {
       tipo: type,
       esExterno: i.listaExternaId !== null,
     };
+  }
+
+  private async descargarYSubirImagenExterna(
+    listaExternaId: string,
+    medio: string,
+    tenraiId: string,
+    datosCatalogo: Record<string, unknown>,
+  ): Promise<void> {
+    const images = (datosCatalogo as any)?.images;
+    const urlImagen = images?.jpg?.large_image_url
+      || images?.jpg?.image_url
+      || (datosCatalogo as any)?.img
+      || null;
+
+    if (!urlImagen) return;
+
+    const response = await axios.get(urlImagen, {
+      responseType: 'arraybuffer',
+      timeout: 15000,
+    });
+
+    const buffer = Buffer.from(response.data, 'binary');
+    const contentType = String(response.headers['content-type'] || 'image/jpeg');
+    const extension = contentType.split('/')[1]?.split(';')[0] || 'jpg';
+
+    const filePath = `${medio}/${tenraiId}.${extension}`;
+
+    const { error: uploadError } = await this.supabase.storage
+      .from('imagenes-anime')
+      .upload(filePath, buffer, {
+        contentType,
+        upsert: true,
+      });
+
+    if (uploadError) {
+      throw new Error(`Error subiendo imagen externa: ${uploadError.message}`);
+    }
+
+    const { data: urlData } = this.supabase.storage
+      .from('imagenes-anime')
+      .getPublicUrl(filePath);
+
+    await this.prisma.recurso_multimedia_externo.create({
+      data: {
+        listaExternaId,
+        tipoImagen: 'poster',
+        urlOriginal: urlImagen,
+        urlSupabase: urlData.publicUrl,
+      },
+    });
   }
 
   // ─── GRUPOS ───────────────────────────────────────────────────────────────
@@ -366,6 +417,24 @@ export class GrupoService {
           },
         });
         listaExternaId = nuevaExterna.id;
+      }
+
+      if (listaExternaId && dto.datosCatalogo) {
+        try {
+          const existeExternoImg = await this.prisma.recurso_multimedia_externo.findFirst({
+            where: { listaExternaId },
+          });
+          if (!existeExternoImg) {
+            await this.descargarYSubirImagenExterna(
+              listaExternaId,
+              dto.medio,
+              dto.tenraiId,
+              dto.datosCatalogo,
+            );
+          }
+        } catch (err: unknown) {
+          this.logger.error(`Error subiendo imagen externa para ${dto.medio}/${dto.tenraiId}: ${(err as Error).message}`);
+        }
       }
     }
 
