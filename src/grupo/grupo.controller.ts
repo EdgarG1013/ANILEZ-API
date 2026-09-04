@@ -18,6 +18,7 @@ import { CrearGrupoDto } from './dto/crear-grupo.dto.js';
 import { ActualizarGrupoDto } from './dto/actualizar-grupo.dto.js';
 import { CrearListaGrupoDto } from './dto/crear-lista-grupo.dto.js';
 import { AgregarItemGrupoDto } from './dto/agregar-item-grupo.dto.js';
+import { ReordenarItemsDto } from './dto/reordenar-items.dto.js';
 
 @Controller('grupo')
 @UseGuards(JwtGuard)
@@ -119,6 +120,15 @@ export class GrupoController {
     return this.grupoService.agregarItem(req.user.id, listaId, dto);
   }
 
+  @Patch('listas/:listaId/items')
+  async reordenarItems(
+    @Request() req: { user: { id: string } },
+    @Param('listaId') listaId: string,
+    @Body() dto: ReordenarItemsDto,
+  ) {
+    return this.grupoService.reordenarItems(req.user.id, listaId, dto.items);
+  }
+
   @Delete('listas/:listaId/items/:medio/:tenraiId')
   async eliminarItem(
     @Request() req: { user: { id: string } },
@@ -127,25 +137,5 @@ export class GrupoController {
     @Param('tenraiId') tenraiId: string,
   ) {
     return this.grupoService.eliminarItem(req.user.id, listaId, medio, tenraiId);
-  }
-
-  // ─── EXTERNOS ───────────────────────────────────────────────────────────
-
-  @Post(':id/externos')
-  async agregarExterno(
-    @Request() req: { user: { id: string } },
-    @Param('id') id: string,
-    @Body() dto: AgregarItemGrupoDto,
-  ) {
-    return this.grupoService.agregarExterno(req.user.id, id, dto);
-  }
-
-  @Delete(':id/externos/:clave')
-  async eliminarExterno(
-    @Request() req: { user: { id: string } },
-    @Param('id') id: string,
-    @Param('clave') clave: string,
-  ) {
-    return this.grupoService.eliminarExterno(req.user.id, id, clave);
   }
 }

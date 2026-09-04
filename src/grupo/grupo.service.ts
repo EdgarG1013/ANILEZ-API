@@ -1,6 +1,7 @@
 import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import axios from 'axios';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CrearGrupoDto } from './dto/crear-grupo.dto.js';
 import { ActualizarGrupoDto } from './dto/actualizar-grupo.dto.js';
@@ -22,6 +23,78 @@ export class GrupoService {
     );
   }
 
+  // ─── HELPERS ────────────────────────────────────────────────────────────────
+
+  private formatearItem(i: any) {
+    const datos = i.lista?.datosJson ?? i.listaExterna?.datosJson ?? {};
+    const images = (datos as any)?.images;
+    const img = images?.jpg?.large_image_url || images?.jpg?.image_url || (datos as any)?.img || '';
+    const title = (datos as any)?.title || (datos as any)?.titulo || '';
+    const type = (datos as any)?.type || (datos as any)?.tipo || '';
+
+    return {
+      clave: `${i.medio}:${i.tenraiId}`,
+      medio: i.medio,
+      tenraiId: i.tenraiId,
+      orden: i.orden,
+      datosCatalogo: datos,
+      titulo: title,
+      img,
+      tipo: type,
+      esExterno: i.listaExternaId !== null,
+    };
+  }
+
+  private async descargarYSubirImagenExterna(
+    listaExternaId: string,
+    medio: string,
+    tenraiId: string,
+    datosCatalogo: Record<string, unknown>,
+  ): Promise<void> {
+    const images = (datosCatalogo as any)?.images;
+    const urlImagen = images?.jpg?.large_image_url
+      || images?.jpg?.image_url
+      || (datosCatalogo as any)?.img
+      || null;
+
+    if (!urlImagen) return;
+
+    const response = await axios.get(urlImagen, {
+      responseType: 'arraybuffer',
+      timeout: 15000,
+    });
+
+    const buffer = Buffer.from(response.data, 'binary');
+    const contentType = String(response.headers['content-type'] || 'image/jpeg');
+    const extension = contentType.split('/')[1]?.split(';')[0] || 'jpg';
+
+    const filePath = `${medio}/${tenraiId}.${extension}`;
+
+    const { error: uploadError } = await this.supabase.storage
+      .from('imagenes-anime')
+      .upload(filePath, buffer, {
+        contentType,
+        upsert: true,
+      });
+
+    if (uploadError) {
+      throw new Error(`Error subiendo imagen externa: ${uploadError.message}`);
+    }
+
+    const { data: urlData } = this.supabase.storage
+      .from('imagenes-anime')
+      .getPublicUrl(filePath);
+
+    await this.prisma.recurso_multimedia_externo.create({
+      data: {
+        listaExternaId,
+        tipoImagen: 'poster',
+        urlOriginal: urlImagen,
+        urlSupabase: urlData.publicUrl,
+      },
+    });
+  }
+
   // ─── GRUPOS ───────────────────────────────────────────────────────────────
 
   async obtenerGrupos(usuarioId: string) {
@@ -29,10 +102,16 @@ export class GrupoService {
       where: { usuarioId },
       include: {
         listas: {
-          include: { items: true },
+          include: {
+            items: {
+              include: {
+                lista: true,
+                listaExterna: true,
+              },
+            },
+          },
           orderBy: { orden: 'asc' },
         },
-        externos: true,
       },
       orderBy: { creadoEn: 'desc' },
     });
@@ -47,20 +126,7 @@ export class GrupoService {
         id: l.id,
         nombre: l.nombre,
         orden: l.orden,
-        items: l.items.map(i => ({
-          clave: `${i.medio}:${i.tenraiId}`,
-          medio: i.medio,
-          tenraiId: i.tenraiId,
-          orden: i.orden,
-        })),
-      })),
-      externos: g.externos.map(x => ({
-        clave: x.clave,
-        medio: x.medio,
-        tenraiId: x.tenraiId,
-        titulo: x.titulo,
-        img: x.img,
-        tipo: x.tipo,
+        items: l.items.map(i => this.formatearItem(i)),
       })),
       creadoEn: g.creadoEn,
     }));
@@ -83,7 +149,6 @@ export class GrupoService {
       portadaUrl: grupo.portadaUrl,
       etiquetas: grupo.etiquetas,
       listas: [],
-      externos: [],
       creadoEn: grupo.creadoEn,
     };
   }
@@ -125,7 +190,6 @@ export class GrupoService {
       throw new HttpException('Grupo no encontrado', HttpStatus.NOT_FOUND);
     }
 
-    // Eliminar portada de Storage si existe
     if (grupo.portadaUrl) {
       try {
         const urlParts = grupo.portadaUrl.split('/');
@@ -152,7 +216,6 @@ export class GrupoService {
       throw new HttpException('Grupo no encontrado', HttpStatus.NOT_FOUND);
     }
 
-    // Eliminar portada anterior si existe
     if (grupo.portadaUrl) {
       try {
         const urlParts = grupo.portadaUrl.split('/');
@@ -207,7 +270,14 @@ export class GrupoService {
 
     const listas = await this.prisma.grupo_listas.findMany({
       where: { grupoId },
-      include: { items: true },
+      include: {
+        items: {
+          include: {
+            lista: true,
+            listaExterna: true,
+          },
+        },
+      },
       orderBy: { orden: 'asc' },
     });
 
@@ -215,12 +285,7 @@ export class GrupoService {
       id: l.id,
       nombre: l.nombre,
       orden: l.orden,
-      items: l.items.map(i => ({
-        clave: `${i.medio}:${i.tenraiId}`,
-        medio: i.medio,
-        tenraiId: i.tenraiId,
-        orden: i.orden,
-      })),
+      items: l.items.map(i => this.formatearItem(i)),
     }));
   }
 
@@ -310,6 +375,69 @@ export class GrupoService {
       throw new HttpException('Este item ya está en la lista', HttpStatus.CONFLICT);
     }
 
+    // Buscar si el item existe en la biblioteca personal
+    const listaPersonal = await this.prisma.lista.findUnique({
+      where: {
+        usuarioId_tenraiId_medio: {
+          usuarioId,
+          tenraiId: dto.tenraiId,
+          medio: dto.medio,
+        },
+      },
+    });
+
+    let listaExternaId: string | null = null;
+    let listaIdRef: string | null = null;
+
+    if (listaPersonal) {
+      // Item está en la biblioteca personal
+      listaIdRef = listaPersonal.id;
+    } else {
+      // Item no está en la biblioteca — crear o buscar lista_externa
+      const existenteExterno = await this.prisma.lista_externa.findUnique({
+        where: {
+          usuarioId_tenraiId_medio: {
+            usuarioId,
+            tenraiId: dto.tenraiId,
+            medio: dto.medio,
+          },
+        },
+      });
+
+      if (existenteExterno) {
+        listaExternaId = existenteExterno.id;
+      } else {
+        const nuevaExterna = await this.prisma.lista_externa.create({
+          data: {
+            usuarioId,
+            tenraiId: dto.tenraiId,
+            medio: dto.medio,
+            estado: 'por-ver',
+            datosJson: (dto.datosCatalogo ?? {}) as any,
+          },
+        });
+        listaExternaId = nuevaExterna.id;
+      }
+
+      if (listaExternaId && dto.datosCatalogo) {
+        try {
+          const existeExternoImg = await this.prisma.recurso_multimedia_externo.findFirst({
+            where: { listaExternaId },
+          });
+          if (!existeExternoImg) {
+            await this.descargarYSubirImagenExterna(
+              listaExternaId,
+              dto.medio,
+              dto.tenraiId,
+              dto.datosCatalogo,
+            );
+          }
+        } catch (err: unknown) {
+          this.logger.error(`Error subiendo imagen externa para ${dto.medio}/${dto.tenraiId}: ${(err as Error).message}`);
+        }
+      }
+    }
+
     const count = await this.prisma.grupo_lista_items.count({
       where: { grupoListaId: listaId },
     });
@@ -317,18 +445,19 @@ export class GrupoService {
     const item = await this.prisma.grupo_lista_items.create({
       data: {
         grupoListaId: listaId,
+        listaId: listaIdRef,
+        listaExternaId,
         medio: dto.medio,
         tenraiId: dto.tenraiId,
         orden: dto.orden ?? count,
       },
+      include: {
+        lista: true,
+        listaExterna: true,
+      },
     });
 
-    return {
-      clave: `${item.medio}:${item.tenraiId}`,
-      medio: item.medio,
-      tenraiId: item.tenraiId,
-      orden: item.orden,
-    };
+    return this.formatearItem(item);
   }
 
   async eliminarItem(usuarioId: string, listaId: string, medio: string, tenraiId: string) {
@@ -348,62 +477,58 @@ export class GrupoService {
     return { mensaje: 'Item eliminado' };
   }
 
-  // ─── EXTERNOS ─────────────────────────────────────────────────────────────
-
-  async agregarExterno(usuarioId: string, grupoId: string, dto: AgregarItemGrupoDto) {
-    const grupo = await this.prisma.grupo.findFirst({
-      where: { id: grupoId, usuarioId },
+  async reordenarItems(usuarioId: string, listaId: string, items: { medio: string; tenraiId: string }[]) {
+    const lista = await this.prisma.grupo_listas.findFirst({
+      where: { id: listaId },
+      include: { grupo: true },
     });
 
-    if (!grupo) {
-      throw new HttpException('Grupo no encontrado', HttpStatus.NOT_FOUND);
+    if (!lista || lista.grupo.usuarioId !== usuarioId) {
+      throw new HttpException('Lista no encontrada', HttpStatus.NOT_FOUND);
     }
 
-    const clave = `${dto.medio}:${dto.tenraiId}`;
-
-    const existente = await this.prisma.grupo_externos.findUnique({
-      where: { grupoId_clave: { grupoId, clave } },
+    // Obtener items actuales para preservar sus FKs
+    const itemsActuales = await this.prisma.grupo_lista_items.findMany({
+      where: { grupoListaId: listaId },
     });
 
-    if (existente) {
-      throw new HttpException('Este externo ya existe en el grupo', HttpStatus.CONFLICT);
+    const fkMap = new Map<string, { listaId: string | null; listaExternaId: string | null }>();
+    for (const item of itemsActuales) {
+      fkMap.set(`${item.medio}:${item.tenraiId}`, {
+        listaId: item.listaId,
+        listaExternaId: item.listaExternaId,
+      });
     }
 
-    const externo = await this.prisma.grupo_externos.create({
-      data: {
-        grupoId,
-        clave,
-        medio: dto.medio,
-        tenraiId: dto.tenraiId,
-        titulo: dto.titulo ?? '',
-        img: dto.img ?? '',
-        tipo: dto.tipo ?? '',
+    await this.prisma.$transaction(async (tx) => {
+      await tx.grupo_lista_items.deleteMany({ where: { grupoListaId: listaId } });
+
+      if (items.length > 0) {
+        await tx.grupo_lista_items.createMany({
+          data: items.map((item, i) => {
+            const fks = fkMap.get(`${item.medio}:${item.tenraiId}`) ?? { listaId: null, listaExternaId: null };
+            return {
+              grupoListaId: listaId,
+              listaId: fks.listaId ?? null,
+              listaExternaId: fks.listaExternaId ?? null,
+              medio: item.medio,
+              tenraiId: item.tenraiId,
+              orden: i,
+            };
+          }),
+        });
+      }
+    });
+
+    const actualizados = await this.prisma.grupo_lista_items.findMany({
+      where: { grupoListaId: listaId },
+      include: {
+        lista: true,
+        listaExterna: true,
       },
+      orderBy: { orden: 'asc' },
     });
 
-    return {
-      clave: externo.clave,
-      medio: externo.medio,
-      tenraiId: externo.tenraiId,
-      titulo: externo.titulo,
-      img: externo.img,
-      tipo: externo.tipo,
-    };
-  }
-
-  async eliminarExterno(usuarioId: string, grupoId: string, clave: string) {
-    const grupo = await this.prisma.grupo.findFirst({
-      where: { id: grupoId, usuarioId },
-    });
-
-    if (!grupo) {
-      throw new HttpException('Grupo no encontrado', HttpStatus.NOT_FOUND);
-    }
-
-    await this.prisma.grupo_externos.deleteMany({
-      where: { grupoId, clave },
-    });
-
-    return { mensaje: 'Externo eliminado' };
+    return actualizados.map(i => this.formatearItem(i));
   }
 }

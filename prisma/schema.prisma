@@ -22,14 +22,10 @@ model usuarios {
   creado_en          DateTime @default(now())
   actualizado_en     DateTime @updatedAt
 
-  // Relación 1:1 con preferencias
-  preferencias preferencias?
-
-  // Relación 1:N con listas
-  listas lista[]
-
-  // Relación 1:N con grupos
-  grupos grupo[]
+  preferencias   preferencias?
+  listas         lista[]
+  listas_externas lista_externa[]
+  grupos         grupo[]
 
   @@map("usuarios")
 }
@@ -44,7 +40,6 @@ model preferencias {
   creadoEn     DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
 
-  // Relación 1:1 con usuario
   usuario usuarios @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
   @@map("preferencias")
@@ -63,7 +58,7 @@ model password_reset_tokens {
 }
 
 // ============================================================
-// LISTAS DE ANIME Y MANGA
+// LISTAS DE ANIME Y MANGA (biblioteca personal)
 // ============================================================
 model lista {
   id            String   @id @default(uuid()) @db.Uuid
@@ -83,8 +78,9 @@ model lista {
   creadoEn      DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
 
-  usuario  usuarios @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuario  usuarios              @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   recursos recursos_multimedia[]
+  grupoItems grupo_lista_items[]
 
   @@unique([usuarioId, tenraiId, medio])
   @@index([usuarioId])
@@ -92,7 +88,7 @@ model lista {
 }
 
 // ============================================================
-// RECURSOS MULTIMEDIA (respaldo de imágenes)
+// RECURSOS MULTIMEDIA (respaldo de imágenes de listas personales)
 // ============================================================
 model recursos_multimedia {
   id          String   @id @default(uuid()) @db.Uuid
@@ -109,6 +105,80 @@ model recursos_multimedia {
 }
 
 // ============================================================
+// HERO — animes destacados del carrusel principal (gestión manual)
+// ============================================================
+model hero_anime {
+  id           Int      @id @default(autoincrement())
+  tenraiId     Int      @map("tenrai_id")
+  titulo       String   @db.VarChar(200)
+  tituloIngles String?  @map("titulo_ingles") @db.VarChar(300)
+  puntuacion   Float    @default(0)
+  tipo         String   @default("TV") @db.VarChar(20)
+  anio         Int      @default(0)
+  estudio      String   @default("") @db.VarChar(100)
+  episodios    Int      @default(0)
+  generos      String[]
+  sinopsis     String   @default("") @db.Text
+  imgUrl       String   @map("img_url") @db.Text
+  activo       Boolean  @default(true)
+  orden        Int      @default(0)
+  creadoEn     DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  @@index([activo, orden])
+  @@map("hero_anime")
+}
+
+// ============================================================
+// LISTAS EXTERNAS (items de catálogo no están en la biblioteca)
+// Mismo esquema que lista para consistencia y futuro soporte
+// de estado, progreso, favoritos, etc.
+// ============================================================
+model lista_externa {
+  id            String   @id @default(uuid()) @db.Uuid
+  usuarioId     String   @map("usuario_id") @db.Uuid
+  tenraiId      String   @map("tenrai_id") @db.VarChar(50)
+  medio         String   @db.VarChar(10)
+  estado        String   @db.VarChar(20)
+  progreso      Int      @default(0)
+  favorito      Boolean  @default(false)
+  puntuacion    Int      @default(0)
+  notas         String?  @db.Text
+  fechaInicio   DateTime? @map("fecha_inicio")
+  fechaFin      DateTime? @map("fecha_fin")
+  orden         Int      @default(0)
+  etiquetas     String[]
+  datosJson     Json     @map("datos_json")
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  usuario  usuarios                       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  recursos recurso_multimedia_externo[]
+  grupoItems grupo_lista_items[]
+
+  @@unique([usuarioId, tenraiId, medio])
+  @@index([usuarioId])
+  @@map("lista_externa")
+}
+
+// ============================================================
+// RECURSOS MULTIMEDIA EXTERNOS (respaldo de imágenes de externos)
+// ============================================================
+model recurso_multimedia_externo {
+  id              String   @id @default(uuid()) @db.Uuid
+  listaExternaId  String   @map("lista_externa_id") @db.Uuid
+  tipoImagen      String   @map("tipo_imagen") @db.VarChar(20)
+  urlOriginal     String?  @map("url_original") @db.Text
+  urlSupabase     String   @map("url_supabase") @db.Text
+  creadoEn        DateTime @default(now()) @map("creado_en")
+
+  listaExterna lista_externa @relation(fields: [listaExternaId], references: [id], onDelete: Cascade)
+
+  @@index([listaExternaId])
+  @@map("recurso_multimedia_externo")
+}
+
+// ============================================================
 // GRUPOS DE COLECCIONES
 // ============================================================
 model grupo {
@@ -121,9 +191,8 @@ model grupo {
   creadoEn    DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
 
-  usuario  usuarios       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  listas   grupo_listas[]
-  externos grupo_externos[]
+  usuario usuarios       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  listas  grupo_listas[]
 
   @@index([usuarioId])
   @@map("grupos")
@@ -146,38 +215,24 @@ model grupo_listas {
 }
 
 // ============================================================
-// ITEMS DENTRO DE UNA LISTA PERSONALIZADA
+// ITEMS DENTRO DE UNA LISTA PERSONALIZADA DEL GRUPO
 // ============================================================
 model grupo_lista_items {
-  id            String @id @default(uuid()) @db.Uuid
-  grupoListaId  String @map("grupo_lista_id") @db.Uuid
-  medio         String @db.VarChar(10)
-  tenraiId      String @map("tenrai_id") @db.VarChar(50)
-  orden         Int    @default(0)
+  id              String  @id @default(uuid()) @db.Uuid
+  grupoListaId    String  @map("grupo_lista_id") @db.Uuid
+  listaId         String? @map("lista_id") @db.Uuid
+  listaExternaId  String? @map("lista_externa_id") @db.Uuid
+  medio           String  @db.VarChar(10)
+  tenraiId        String  @map("tenrai_id") @db.VarChar(50)
+  orden           Int     @default(0)
 
-  grupoLista grupo_listas @relation(fields: [grupoListaId], references: [id], onDelete: Cascade)
+  grupoLista   grupo_listas    @relation(fields: [grupoListaId], references: [id], onDelete: Cascade)
+  lista        lista?          @relation(fields: [listaId], references: [id], onDelete: SetNull)
+  listaExterna lista_externa?  @relation(fields: [listaExternaId], references: [id], onDelete: SetNull)
 
   @@unique([grupoListaId, medio, tenraiId])
   @@index([grupoListaId])
+  @@index([listaId])
+  @@index([listaExternaId])
   @@map("grupo_lista_items")
-}
-
-// ============================================================
-// ITEMS EXTERNOS (no están en la biblioteca del usuario)
-// ============================================================
-model grupo_externos {
-  id        String @id @default(uuid()) @db.Uuid
-  grupoId   String @map("grupo_id") @db.Uuid
-  clave     String @db.VarChar(100)
-  medio     String @db.VarChar(10)
-  tenraiId  String @map("tenrai_id") @db.VarChar(50)
-  titulo    String @db.VarChar(255)
-  img       String @default("") @db.Text
-  tipo      String @default("") @db.VarChar(50)
-
-  grupo grupo @relation(fields: [grupoId], references: [id], onDelete: Cascade)
-
-  @@unique([grupoId, clave])
-  @@index([grupoId])
-  @@map("grupo_externos")
 }
