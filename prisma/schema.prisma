@@ -105,6 +105,31 @@ model recursos_multimedia {
 }
 
 // ============================================================
+// HERO — animes destacados del carrusel principal (gestión manual)
+// ============================================================
+model hero_anime {
+  id           Int      @id @default(autoincrement())
+  tenraiId     Int      @map("tenrai_id")
+  titulo       String   @db.VarChar(200)
+  tituloIngles String?  @map("titulo_ingles") @db.VarChar(300)
+  puntuacion   Float    @default(0)
+  tipo         String   @default("TV") @db.VarChar(20)
+  anio         Int      @default(0)
+  estudio      String   @default("") @db.VarChar(100)
+  episodios    Int      @default(0)
+  generos      String[]
+  sinopsis     String   @default("") @db.Text
+  imgUrl       String   @map("img_url") @db.Text
+  activo       Boolean  @default(true)
+  orden        Int      @default(0)
+  creadoEn     DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  @@index([activo, orden])
+  @@map("hero_anime")
+}
+
+// ============================================================
 // LISTAS EXTERNAS (items de catálogo no están en la biblioteca)
 // Mismo esquema que lista para consistencia y futuro soporte
 // de estado, progreso, favoritos, etc.

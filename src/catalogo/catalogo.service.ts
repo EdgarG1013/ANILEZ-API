@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service.js';
 import axios, { AxiosResponse } from 'axios';
 
 // ─── Rate-limiting y cola de peticiones a Tenrai ─────────────────────────────
@@ -275,6 +276,8 @@ export interface HeroItem {
 @Injectable()
 export class CatalogoService {
   private readonly logger = new Logger(CatalogoService.name);
+
+  constructor(private readonly prisma: PrismaService) {}
 
   // ─── PETICIÓN CON RATE-LIMITING ───────────────────────────────────────────
 
@@ -582,28 +585,25 @@ export class CatalogoService {
 
   async obtenerHero(): Promise<HeroItem[]> {
     return this.obtenerConCache('hero', 8 * 60 * 60 * 1000, async () => {
-      // Hero manual: IDs de animes destacados que se actualizan periódicamente
-      // Por ahora traemos los top populares como fallback
-      const json = await this.pedirTenrai<{
-        data: ApiAnime[];
-      }>('/anime?limit=5&order_by=popularity&sort=asc&sfw=true');
-
-      return (json.data || []).map(a => {
-        const img = a.images?.jpg?.large_image_url || a.images?.jpg?.image_url || '';
-        return {
-          id: a.mal_id,
-          title: a.title,
-          altTitle: a.title_english ?? '',
-          score: a.score ?? 0,
-          type: a.type ?? 'TV',
-          year: a.year ?? a.aired?.prop?.from?.year ?? 0,
-          studio: (a.studios || [])[0]?.name ?? '',
-          eps: a.episodes ?? 0,
-          genres: [...(a.genres || []), ...(a.themes || [])].map(g => g.name),
-          synopsis: a.synopsis ?? '',
-          img,
-        };
+      const registros = await this.prisma.hero_anime.findMany({
+        where: { activo: true },
+        orderBy: { orden: 'asc' },
+        take: 5,
       });
+
+      return registros.map(r => ({
+        id: r.tenraiId,
+        title: r.titulo,
+        altTitle: r.tituloIngles ?? '',
+        score: r.puntuacion,
+        type: r.tipo,
+        year: r.anio,
+        studio: r.estudio,
+        eps: r.episodios,
+        genres: r.generos,
+        synopsis: r.sinopsis,
+        img: r.imgUrl,
+      }));
     });
   }
 
