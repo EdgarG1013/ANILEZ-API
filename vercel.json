@@ -1,45 +1,26 @@
 {
   "version": 2,
-  "installCommand": "pnpm install",
+  "installCommand": "pnpm install && npx prisma generate",
   "buildCommand": "pnpm build",
-  "builds": [
-    {
-      "src": "dist/main.js",
-      "use": "@vercel/node"
-    }
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/api/index" }
   ],
-  "routes": [
+  "headers": [
     {
-      "src": "/api/catalogo/(hero|temporada|top-anime|top-manga|proximos|noticias)(.*)",
-      "headers": {
-        "Cache-Control": "public, s-maxage=28800, stale-while-revalidate=86400, max-age=0"
-      },
-      "continue": true
+      "source": "/api/catalogo/(hero|temporada|top-anime|top-manga|proximos|noticias)(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, s-maxage=28800, stale-while-revalidate=86400, max-age=0" }]
     },
     {
-      "src": "/api/catalogo/(buscar|buscar-global|detalle-anime|detalle-manga|buscar-por-temporada)(.*)",
-      "headers": {
-        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600, max-age=0"
-      },
-      "continue": true
+      "source": "/api/catalogo/(buscar|buscar-global|detalle-anime|detalle-manga|buscar-por-temporada)(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, s-maxage=300, stale-while-revalidate=600, max-age=0" }]
     },
     {
-      "src": "/api/auth/(.*)",
-      "headers": {
-        "Cache-Control": "no-store, no-cache, must-revalidate"
-      },
-      "continue": true
+      "source": "/api/auth/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" }]
     },
     {
-      "src": "/api/(.*)",
-      "headers": {
-        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600, max-age=0"
-      },
-      "continue": true
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/dist/main.js"
+      "source": "/api/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, s-maxage=300, stale-while-revalidate=600, max-age=0" }]
     }
   ]
 }

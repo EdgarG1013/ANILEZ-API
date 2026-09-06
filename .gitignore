@@ -8,6 +8,10 @@
 docs
 .env
 env
+tsconfig.tsbuildinfo
+tsconfig.build.tsbuildinfo
+tsconfig.build.tsbuildinfo
+*.tsbuildinfo
 
 # Logs
 logs
