@@ -247,6 +247,7 @@ export interface PopularItem {
   count: number | null;
   countLabel: string;
   img: string;
+  medio?: 'anime' | 'manga';
 }
 
 export interface Noticia {
@@ -636,6 +637,7 @@ export class CatalogoService {
           count: i.total,
           countLabel: 'episodio',
           img: i.img,
+          medio: 'anime',
         }));
     });
   }
@@ -658,6 +660,7 @@ export class CatalogoService {
           count: i.total,
           countLabel: 'capítulo',
           img: i.img,
+          medio: 'manga',
         }));
     });
   }
