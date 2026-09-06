@@ -53,9 +53,14 @@ async function createApp(): Promise<NestExpressApplication> {
 export default async function handler(req: any, res: any) {
   const nestApp = await createApp();
   const expressApp = nestApp.getHttpAdapter().getInstance();
-  return expressApp(req, res);
-}
 
+  return new Promise<void>((resolve, reject) => {
+    res.on('finish', resolve);
+    res.on('close', resolve);
+    res.on('error', reject);
+    expressApp(req, res);
+  });
+}
 // ─── Desarrollo local ───────────────────────────────────────────────────────
 if (!process.env.VERCEL) {
   createApp().then((nestApp) =>
