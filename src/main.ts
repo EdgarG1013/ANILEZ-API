@@ -59,16 +59,28 @@ async function createApp(): Promise<NestExpressApplication> {
 
 // ─── Handler para Vercel Serverless ──────────────────────────────────────────
 export default async function handler(req: any, res: any) {
+  console.log('[HANDLER] incoming', req.method, req.url);
   const nestApp = await createApp();
+  console.log('[HANDLER] app ready, dispatching to express');
   const expressApp = nestApp.getHttpAdapter().getInstance();
 
   return new Promise<void>((resolve, reject) => {
-    res.on('finish', resolve);
-    res.on('close', resolve);
-    res.on('error', reject);
+    res.on('finish', () => {
+      console.log('[HANDLER] response finished with status', res.statusCode);
+      resolve();
+    });
+    res.on('close', () => {
+      console.log('[HANDLER] response closed, statusCode', res.statusCode);
+      resolve();
+    });
+    res.on('error', (err: any) => {
+      console.error('[HANDLER] response error', err);
+      reject(err);
+    });
     expressApp(req, res);
   });
 }
+
 // ─── Desarrollo local ───────────────────────────────────────────────────────
 if (!process.env.VERCEL) {
   createApp().then((nestApp) =>
