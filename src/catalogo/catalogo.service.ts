@@ -682,7 +682,7 @@ export class CatalogoService {
           titulo: n.title,
           extracto: n.excerpt ?? '',
           img: n.images?.jpg?.image_url || '',
-          fuente: n.author_username || 'ANILIST',
+          fuente: n.author_username || 'ANILEZ',
           fecha: n.date || '',
           url: n.url || '',
         }));
