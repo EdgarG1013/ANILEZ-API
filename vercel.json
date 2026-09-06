@@ -1,0 +1,73 @@
+{
+  "version": 2,
+  "installCommand": "pnpm install",
+  "buildCommand": "pnpm build",
+  "outputDirectory": "dist",
+  "framework": null,
+  "builds": [
+    {
+      "src": "dist/main.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/dist/main.js"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/catalogo/(hero|temporada|top-anime|top-manga|proximos|noticias)(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, s-maxage=28800, stale-while-revalidate=86400, max-age=0"
+        }
+      ]
+    },
+    {
+      "source": "/api/catalogo/(buscar|buscar-global|detalle-anime|detalle-manga|buscar-por-temporada)(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, s-maxage=300, stale-while-revalidate=600, max-age=0"
+        }
+      ]
+    },
+    {
+      "source": "/api/auth/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, no-cache, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, s-maxage=300, stale-while-revalidate=600, max-age=0"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "https://anilez.site"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PATCH, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        },
+        {
+          "key": "Access-Control-Allow-Credentials",
+          "value": "true"
+        }
+      ]
+    }
+  ]
+}
