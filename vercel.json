@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "framework": null,
   "installCommand": "pnpm install && npx prisma generate",
   "buildCommand": "pnpm build",
   "rewrites": [
