@@ -2,7 +2,7 @@
   "version": 2,
   "framework": null,
   "installCommand": "pnpm install && npx prisma generate",
-  "buildCommand": "pnpm build",
+  "buildCommand": "pnpm nest:build",
   "rewrites": [
     { "source": "/(.*)", "destination": "/api/index" }
   ],
