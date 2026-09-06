@@ -53,6 +53,9 @@ async function createApp(): Promise<NestExpressApplication> {
 
     // Prefijo global
     app.setGlobalPrefix('api');
+
+    await app.init(); // ← AGREGAR ESTO, antes de return
+    
   }
   return app;
 }
