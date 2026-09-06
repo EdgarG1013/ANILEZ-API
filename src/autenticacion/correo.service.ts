@@ -28,9 +28,9 @@ export class CorreoService {
 
     try {
       await this.transporter.sendMail({
-        from: `"ANILIST" <${process.env.MAIL_FROM_ADDRESS || process.env.MAIL_USERNAME}>`,
+        from: `"ANILEZ" <${process.env.MAIL_FROM_ADDRESS || process.env.MAIL_USERNAME}>`,
         to: correo,
-        subject: 'Verifica tu correo electrónico - ANILIST',
+        subject: 'Verifica tu correo electrónico - ANILEZ',
         html: `
           <!DOCTYPE html>
             <html lang="es">
@@ -53,7 +53,7 @@ export class CorreoService {
                                     <td
                                         style="background: linear-gradient(rgba(10, 9, 16, 0.7), rgba(10, 9, 16, 0.7)), url('https://res.cloudinary.com/dkggojses/image/upload/v1788139948/bg-emails_zxm0r6.png'); background-size: cover; background-position: center; padding: 80px 60px; text-align: center;">
                                         <img src="https://res.cloudinary.com/dkggojses/image/upload/v1788107937/logo_m5uirp.svg"
-                                        alt="ANILIST" width="220"
+                                        alt="ANILEZ" width="220"
                                             style="display: inline-block; max-width: 220px; height: auto;">
                                     </td>
                                 </tr>
@@ -70,7 +70,7 @@ export class CorreoService {
                                         </p>
 
                                         <p style="margin: 0 0 20px; color: #b9b3cc; font-size: 16px; line-height: 1.6;">
-                                            Gracias por registrarte en ANILIST. Para completar tu registro y comenzar a
+                                            Gracias por registrarte en ANILEZ. Para completar tu registro y comenzar a
                                             explorar anime, manga y tus listas de seguimiento, necesitamos que
                                             confirmes tu dirección de correo electrónico.
                                         </p>
@@ -114,7 +114,7 @@ export class CorreoService {
                                             temporada, listas personalizadas y recomendaciones para ti.
                                         </p>
                                         <p style="margin: 20px 0 0; color: #57506b; font-size: 12px;">
-                                            © 2026 ANILIST. Todos los derechos reservados.<br>
+                                            © 2026 ANILEZ. Todos los derechos reservados.<br>
                                             <a href="#" style="color: #946ed9; text-decoration: none;">
                                                 Visita nuestro sitio web
                                             </a>
@@ -146,9 +146,9 @@ export class CorreoService {
 
     try {
       await this.transporter.sendMail({
-        from: `"ANILIST" <${process.env.MAIL_FROM_ADDRESS || process.env.MAIL_USERNAME}>`,
+        from: `"ANILEZ" <${process.env.MAIL_FROM_ADDRESS || process.env.MAIL_USERNAME}>`,
         to: correo,
-        subject: 'Restablece tu contraseña - ANILIST',
+        subject: 'Restablece tu contraseña - ANILEZ',
         html: `
             <!DOCTYPE html>
             <html lang="es">
@@ -171,7 +171,7 @@ export class CorreoService {
                                     <td
                                         style="background: linear-gradient(rgba(10, 9, 16, 0.7), rgba(10, 9, 16, 0.7)), url('https://res.cloudinary.com/dkggojses/image/upload/v1788139948/bg-emails_zxm0r6.png'); background-size: cover; background-position: center; padding: 80px 60px; text-align: center;">
                                         <img src="https://res.cloudinary.com/dkggojses/image/upload/v1788107937/logo_m5uirp.svg"
-                                        alt="ANILIST" width="220"
+                                        alt="ANILEZ" width="220"
                                             style="display: inline-block; max-width: 220px; height: auto;">
                                     </td>
                                 </tr>
@@ -188,7 +188,7 @@ export class CorreoService {
                                         </p>
 
                                         <p style="margin: 0 0 20px; color: #b9b3cc; font-size: 16px; line-height: 1.6;">
-                                            Hemos recibido una solicitud para restablecer la contraseña de tu cuenta de ANILIST.
+                                            Hemos recibido una solicitud para restablecer la contraseña de tu cuenta de ANILEZ.
                                         </p>
 
                                         <p style="margin: 0 0 30px; color: #b9b3cc; font-size: 16px; line-height: 1.6;">
@@ -243,7 +243,7 @@ export class CorreoService {
                                             temporada, listas personalizadas y recomendaciones para ti.
                                         </p>
                                         <p style="margin: 20px 0 0; color: #57506b; font-size: 12px;">
-                                            © 2026 ANILIST. Todos los derechos reservados.<br>
+                                            © 2026 ANILEZ. Todos los derechos reservados.<br>
                                             <a href="#" style="color: #946ed9; text-decoration: none;">
                                                 Visita nuestro sitio web
                                             </a>

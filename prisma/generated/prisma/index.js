@@ -151,7 +151,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "C:\\Users\\edgar\\Desktop\\PROYECTO - ANILIST\\ANILIST - API\\prisma\\generated\\prisma",
+      "value": "C:\\Users\\edgar\\Desktop\\PROYECTO - ANILEZ\\ANILEZ - API\\prisma\\generated\\prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -165,7 +165,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "C:\\Users\\edgar\\Desktop\\PROYECTO - ANILIST\\ANILIST - API\\prisma\\schema.prisma",
+    "sourceFilePath": "C:\\Users\\edgar\\Desktop\\PROYECTO - ANILEZ\\ANILEZ - API\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {

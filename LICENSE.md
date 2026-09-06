@@ -1,8 +1,8 @@
 # MARCA REGISTRADA Y PROPIEDAD INTELECTUAL
 
-El nombre **"ANILIST"**, sus logotipos, diseños visuales e identidad de marca asociados son propiedad exclusiva del autor de este proyecto.
+El nombre **"ANILEZ"**, sus logotipos, diseños visuales e identidad de marca asociados son propiedad exclusiva del autor de este proyecto.
 
-El uso del código fuente de este repositorio está regulado por la **Licencia Apache 2.0** que se detalla a continuación. Sin embargo, esta licencia **NO** otorga permisos, derechos ni concesiones para utilizar el nombre "ANILIST", su logotipo ni ninguna marca comercial relacionada con fines promocionales, comerciales o de distribución sin una autorización previa y por escrito.
+El uso del código fuente de este repositorio está regulado por la **Licencia Apache 2.0** que se detalla a continuación. Sin embargo, esta licencia **NO** otorga permisos, derechos ni concesiones para utilizar el nombre "ANILEZ", su logotipo ni ninguna marca comercial relacionada con fines promocionales, comerciales o de distribución sin una autorización previa y por escrito.
 
 Si decides realizar una bifurcación (*fork*) o derivar un proyecto basado en este código, estás obligado a cambiar el nombre del software y eliminar por completo los logotipos e identificadores visuales originales.
 
