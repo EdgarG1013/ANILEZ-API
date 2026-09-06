@@ -624,16 +624,19 @@ export class CatalogoService {
         medio: 'anime',
         orden: 'popularity:asc',
       });
-      return resultado.items.slice(0, 5).map(i => ({
-        id: i.id,
-        title: i.title,
-        synopsis: i.synopsis,
-        genres: i.genres,
-        year: i.year,
-        count: i.total,
-        countLabel: 'episodio',
-        img: i.img,
-      }));
+      return resultado.items
+        .filter(i => typeof i.score === 'number' && i.score >= 7)
+        .slice(0, 5)
+        .map(i => ({
+          id: i.id,
+          title: i.title,
+          synopsis: i.synopsis,
+          genres: i.genres,
+          year: i.year,
+          count: i.total,
+          countLabel: 'episodio',
+          img: i.img,
+        }));
     });
   }
 
@@ -643,16 +646,19 @@ export class CatalogoService {
         medio: 'manga',
         orden: 'popularity:asc',
       });
-      return resultado.items.slice(0, 5).map(i => ({
-        id: i.id,
-        title: i.title,
-        synopsis: i.synopsis,
-        genres: i.genres,
-        year: i.year,
-        count: i.total,
-        countLabel: 'capítulo',
-        img: i.img,
-      }));
+      return resultado.items
+        .filter(i => typeof i.score === 'number' && i.score >= 7)
+        .slice(0, 5)
+        .map(i => ({
+          id: i.id,
+          title: i.title,
+          synopsis: i.synopsis,
+          genres: i.genres,
+          year: i.year,
+          count: i.total,
+          countLabel: 'capítulo',
+          img: i.img,
+        }));
     });
   }
 
@@ -676,7 +682,7 @@ export class CatalogoService {
           titulo: n.title,
           extracto: n.excerpt ?? '',
           img: n.images?.jpg?.image_url || '',
-          fuente: n.author_username || 'ANILIST',
+          fuente: n.author_username || 'ANILEZ',
           fecha: n.date || '',
           url: n.url || '',
         }));

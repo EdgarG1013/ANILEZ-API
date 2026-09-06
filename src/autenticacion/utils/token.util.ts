@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
 
-const SECRET = process.env.JWT_SECRET || 'anilist-email-verify-secret';
+const SECRET = process.env.JWT_SECRET || 'ANILEZ-email-verify-secret';
 
 export function hashToken(email: string): string {
   const payload = `${email}:${Date.now()}`;
