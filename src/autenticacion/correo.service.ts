@@ -52,7 +52,7 @@ export class CorreoService {
                                 <tr>
                                     <td
                                         style="background: linear-gradient(rgba(10, 9, 16, 0.7), rgba(10, 9, 16, 0.7)), url('https://res.cloudinary.com/dkggojses/image/upload/v1788139948/bg-emails_zxm0r6.png'); background-size: cover; background-position: center; padding: 80px 60px; text-align: center;">
-                                        <img src="https://res.cloudinary.com/dkggojses/image/upload/v1788107937/logo_m5uirp.svg"
+                                        <img src="https://res.cloudinary.com/dkggojses/image/upload/v1788755301/logo_fwuv5m.svg"
                                         alt="ANILEZ" width="220"
                                             style="display: inline-block; max-width: 220px; height: auto;">
                                     </td>
@@ -115,7 +115,7 @@ export class CorreoService {
                                         </p>
                                         <p style="margin: 20px 0 0; color: #57506b; font-size: 12px;">
                                             © 2026 ANILEZ. Todos los derechos reservados.<br>
-                                            <a href="#" style="color: #946ed9; text-decoration: none;">
+                                            <a href="${frontendUrl}" style="color: #946ed9; text-decoration: none;">
                                                 Visita nuestro sitio web
                                             </a>
                                         </p>
@@ -170,7 +170,7 @@ export class CorreoService {
                                 <tr>
                                     <td
                                         style="background: linear-gradient(rgba(10, 9, 16, 0.7), rgba(10, 9, 16, 0.7)), url('https://res.cloudinary.com/dkggojses/image/upload/v1788139948/bg-emails_zxm0r6.png'); background-size: cover; background-position: center; padding: 80px 60px; text-align: center;">
-                                        <img src="https://res.cloudinary.com/dkggojses/image/upload/v1788107937/logo_m5uirp.svg"
+                                        <img src="https://res.cloudinary.com/dkggojses/image/upload/v1788755301/logo_fwuv5m.svg"
                                         alt="ANILEZ" width="220"
                                             style="display: inline-block; max-width: 220px; height: auto;">
                                     </td>
@@ -244,7 +244,7 @@ export class CorreoService {
                                         </p>
                                         <p style="margin: 20px 0 0; color: #57506b; font-size: 12px;">
                                             © 2026 ANILEZ. Todos los derechos reservados.<br>
-                                            <a href="#" style="color: #946ed9; text-decoration: none;">
+                                            <a href="${frontendUrl}" style="color: #946ed9; text-decoration: none;">
                                                 Visita nuestro sitio web
                                             </a>
                                         </p>
