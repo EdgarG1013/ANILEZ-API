@@ -12,6 +12,8 @@ tsconfig.tsbuildinfo
 tsconfig.build.tsbuildinfo
 tsconfig.build.tsbuildinfo
 *.tsbuildinfo
+.env.prod
+env.prod
 
 # Logs
 logs
