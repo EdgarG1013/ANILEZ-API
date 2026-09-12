@@ -17,6 +17,11 @@ import { RegistrarDto } from './dto/registrar.dto.js';
 import { IniciarSesionDto } from './dto/iniciar-sesion.dto.js';
 import { OlvidarContrasenaDto } from './dto/olvidar-contrasena.dto.js';
 import { RestablecerContrasenaDto } from './dto/restablecer-contrasena.dto.js';
+import { ActualizarPerfilDto } from './dto/actualizar-perfil.dto.js';
+import { SolicitarCambioCorreoDto } from './dto/solicitar-cambio-correo.dto.js';
+import { ConfirmarCambioCorreoDto } from './dto/confirmar-cambio-correo.dto.js';
+import { CambiarContrasenaDto } from './dto/cambiar-contrasena.dto.js';
+import { EstablecerContrasenaDto } from './dto/establecer-contrasena.dto.js';
 import { hashToken, unhashToken } from './utils/token.util.js';
 
 @Injectable()
@@ -186,6 +191,7 @@ export class AutenticacionService {
         avatar: true,
         email_verificado_en: true,
         creado_en: true,
+        password: true,
         preferencias: true,
       },
     });
@@ -194,9 +200,14 @@ export class AutenticacionService {
       throw new NotFoundException('Usuario no encontrado');
     }
 
+    const { password: _, ...perfil } = usuario;
+
     return {
       ok: true,
-      data: usuario,
+      data: {
+        ...perfil,
+        hasPassword: !!_,
+      },
     };
   }
 
@@ -461,6 +472,212 @@ export class AutenticacionService {
     return {
       ok: true,
       avatar: `${avatarUrl}?t=${Date.now()}`,
+    };
+  }
+
+  // ============================================================
+  // ACTUALIZAR PERFIL (nombre)
+  // ============================================================
+  async actualizarPerfil(usuarioId: string, dto: ActualizarPerfilDto) {
+    const usuario = await this.prisma.usuarios.update({
+      where: { id: usuarioId },
+      data: { nombre: dto.nombre },
+      select: {
+        id: true,
+        nombre: true,
+        correo: true,
+        avatar: true,
+      },
+    });
+
+    return {
+      ok: true,
+      mensaje: 'Perfil actualizado exitosamente',
+      data: usuario,
+    };
+  }
+
+  // ============================================================
+  // SOLICITAR CAMBIO DE CORREO
+  // ============================================================
+  async solicitarCambioCorreo(usuarioId: string, dto: SolicitarCambioCorreoDto) {
+    const usuario = await this.prisma.usuarios.findUnique({
+      where: { id: usuarioId },
+    });
+
+    if (!usuario) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    // Si es usuario OAuth sin password, no puede verificar con password
+    if (!usuario.password) {
+      throw new BadRequestException('Esta cuenta fue creada con un proveedor externo. Establece una contraseña primero desde configuración.');
+    }
+
+    // Verificar contraseña actual
+    const passwordValido = await bcrypt.compare(dto.password, usuario.password);
+    if (!passwordValido) {
+      throw new UnauthorizedException('La contraseña actual es incorrecta');
+    }
+
+    // Verificar que el nuevo correo no esté en uso
+    if (dto.nuevoCorreo === usuario.correo) {
+      throw new BadRequestException('El nuevo correo es igual al actual');
+    }
+
+    const existeOtro = await this.prisma.usuarios.findUnique({
+      where: { correo: dto.nuevoCorreo },
+    });
+    if (existeOtro) {
+      throw new ConflictException('Ya existe una cuenta con ese correo electrónico');
+    }
+
+    // Guardar correo pendiente
+    await this.prisma.usuarios.update({
+      where: { id: usuarioId },
+      data: { correo_pendiente: dto.nuevoCorreo },
+    });
+
+    // Generar token de verificación para el nuevo correo
+    const verificationToken = hashToken(dto.nuevoCorreo);
+    try {
+      await this.correoService.enviarCorreoCambioCorreo(
+        dto.nuevoCorreo,
+        usuario.nombre,
+        verificationToken,
+      );
+    } catch {
+      // Si falla el envío, igual dejamos el correo pendiente
+    }
+
+    return {
+      ok: true,
+      mensaje: `Se envió un correo de verificación a ${dto.nuevoCorreo}. Confirma el cambio desde tu bandeja de entrada.`,
+    };
+  }
+
+  // ============================================================
+  // CONFIRMAR CAMBIO DE CORREO
+  // ============================================================
+  async confirmarCambioCorreo(usuarioId: string, dto: ConfirmarCambioCorreoDto) {
+    const nuevoCorreo = unhashToken(dto.token);
+
+    const usuario = await this.prisma.usuarios.findFirst({
+      where: {
+        id: usuarioId,
+        correo_pendiente: nuevoCorreo,
+      },
+    });
+
+    if (!usuario) {
+      throw new BadRequestException('Token de verificación inválido o el correo pendiente no coincide');
+    }
+
+    // Verificar que nadie más haya tomado ese correo
+    const existeOtro = await this.prisma.usuarios.findUnique({
+      where: { correo: nuevoCorreo },
+    });
+    if (existeOtro && existeOtro.id !== usuarioId) {
+      throw new ConflictException('Ese correo electrónico ya fue registrado por otro usuario');
+    }
+
+    // Actualizar correo y limpiar pendiente
+    const actualizado = await this.prisma.usuarios.update({
+      where: { id: usuarioId },
+      data: {
+        correo: nuevoCorreo,
+        correo_pendiente: null,
+      },
+      select: {
+        id: true,
+        nombre: true,
+        correo: true,
+        avatar: true,
+      },
+    });
+
+    // Generar nuevo JWT con el nuevo correo
+    const token = this.jwtService.sign({
+      sub: actualizado.id,
+      correo: actualizado.correo,
+    });
+
+    return {
+      ok: true,
+      mensaje: 'Correo electrónico actualizado exitosamente',
+      data: {
+        usuario: actualizado,
+        token,
+      },
+    };
+  }
+
+  // ============================================================
+  // CAMBIAR CONTRASEÑA (autenticado, con password actual)
+  // ============================================================
+  async cambiarContrasena(usuarioId: string, dto: CambiarContrasenaDto) {
+    const usuario = await this.prisma.usuarios.findUnique({
+      where: { id: usuarioId },
+    });
+
+    if (!usuario) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    // Si no tiene password (OAuth), usar establecerContrasena en su lugar
+    if (!usuario.password) {
+      throw new BadRequestException('Tu cuenta no tiene contraseña. Usa "Establecer contraseña" para crear una.');
+    }
+
+    // Verificar contraseña actual
+    const passwordValido = await bcrypt.compare(dto.contrasenaActual, usuario.password);
+    if (!passwordValido) {
+      throw new UnauthorizedException('La contraseña actual es incorrecta');
+    }
+
+    // Hashear y guardar nueva contraseña
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(dto.nuevaContrasena, salt);
+
+    await this.prisma.usuarios.update({
+      where: { id: usuarioId },
+      data: { password: hashedPassword },
+    });
+
+    return {
+      ok: true,
+      mensaje: 'Contraseña actualizada exitosamente',
+    };
+  }
+
+  // ============================================================
+  // ESTABLECER CONTRASEÑA (para usuarios OAuth sin password)
+  // ============================================================
+  async establecerContrasena(usuarioId: string, dto: EstablecerContrasenaDto) {
+    const usuario = await this.prisma.usuarios.findUnique({
+      where: { id: usuarioId },
+    });
+
+    if (!usuario) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    if (usuario.password) {
+      throw new BadRequestException('Tu cuenta ya tiene contraseña. Usa "Cambiar contraseña" para actualizarla.');
+    }
+
+    // Hashear y guardar
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(dto.password, salt);
+
+    await this.prisma.usuarios.update({
+      where: { id: usuarioId },
+      data: { password: hashedPassword },
+    });
+
+    return {
+      ok: true,
+      mensaje: 'Contraseña establecida exitosamente. Ahora puedes iniciar sesión con tu correo y contraseña.',
     };
   }
 }

@@ -264,4 +264,121 @@ export class CorreoService {
       throw error;
     }
   }
+
+  async enviarCorreoCambioCorreo(
+    correo: string,
+    nombre: string,
+    token: string,
+  ): Promise<void> {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const verificationUrl = `${frontendUrl}/verificar-email?token=${token}&tipo=cambio-correo`;
+
+    try {
+      await this.transporter.sendMail({
+        from: `"ANILEZ" <${process.env.MAIL_FROM_ADDRESS || process.env.MAIL_USERNAME}>`,
+        to: correo,
+        subject: 'Confirma tu nuevo correo electrónico - ANILEZ',
+        html: `
+            <!DOCTYPE html>
+            <html lang="es">
+
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Confirmar cambio de correo</title>
+            </head>
+
+            <body
+                style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0912;">
+                <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0912; padding: 40px 0;">
+                    <tr>
+                        <td align="center">
+                            <table width="600" cellpadding="0" cellspacing="0"
+                                style="background-color: #110f1a; border: 1px solid #2a2140; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 24px rgba(148, 110, 217, 0.15);">
+                                <!-- Header -->
+                                <tr>
+                                    <td
+                                        style="background: linear-gradient(rgba(10, 9, 16, 0.7), rgba(10, 9, 16, 0.7)), url('https://res.cloudinary.com/dkggojses/image/upload/v1788139948/bg-emails_zxm0r6.png'); background-size: cover; background-position: center; padding: 80px 60px; text-align: center;">
+                                        <img src="https://res.cloudinary.com/dkggojses/image/upload/v1788755301/logo_fwuv5m.svg"
+                                        alt="ANILEZ" width="220"
+                                            style="display: inline-block; max-width: 220px; height: auto;">
+                                    </td>
+                                </tr>
+
+                                <!-- Contenido -->
+                                <tr>
+                                    <td style="padding: 40px 30px;">
+                                        <h2
+                                            style="margin: 0 0 20px; color: #f4f2fa; font-family: 'Oxanium', sans-serif; font-size: 22px; font-weight: 700;">
+                                            Confirma tu nuevo correo</h2>
+
+                                        <p style="margin: 0 0 20px; color: #b9b3cc; font-size: 16px; line-height: 1.6;">
+                                            ¡Hola ${nombre}!
+                                        </p>
+
+                                        <p style="margin: 0 0 20px; color: #b9b3cc; font-size: 16px; line-height: 1.6;">
+                                            Has solicitado cambiar tu dirección de correo electrónico en ANILEZ.
+                                            Para completar el cambio, haz clic en el botón de abajo y confirma tu nueva dirección.
+                                        </p>
+
+                                        <p style="margin: 0 0 30px; color: #b9b3cc; font-size: 16px; line-height: 1.6;">
+                                            Si no solicitaste este cambio, puedes ignorar este correo de forma segura.
+                                        </p>
+
+                                        <!-- Botón CTA -->
+                                        <table width="100%" cellpadding="0" cellspacing="0">
+                                            <tr>
+                                                <td align="center" style="padding: 0 0 30px;">
+                                                    <a href="${verificationUrl}"
+                                                        style="display: inline-block; background-color: #946ed9; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-family: 'Oxanium', sans-serif; font-size: 16px; font-weight: 700; box-shadow: 0 4px 14px rgba(148, 110, 217, 0.4);">
+                                                        Confirmar cambio de correo
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </table>
+
+                                        <!-- Alerta de seguridad -->
+                                        <div
+                                            style="background-color: rgba(148, 110, 217, 0.1); border-left: 4px solid #946ed9; padding: 16px; border-radius: 6px; margin-bottom: 25px;">
+                                            <p style="margin: 0 0 8px; color: #d9cef5; font-size: 14px; font-weight: 600;">
+                                                ⚠️ <strong>Nota importante:</strong>
+                                            </p>
+                                            <p style="margin: 0; color: #c3b9dd; font-size: 14px; line-height: 1.5;">
+                                                Este enlace expirará en 24 horas por seguridad.
+                                                Tu correo actual seguirá activo hasta que confirmes el cambio.
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- Footer -->
+                                <tr>
+                                    <td
+                                        style="background-color: #0d0c15; padding: 30px; text-align: center; border-top: 1px solid #2a2140;">
+                                        <p style="margin: 0 0 15px; color: #6f6886; font-size: 13px;">
+                                            Descubre, sigue y valora tus animes y mangas favoritos. Estrenos por
+                                            temporada, listas personalizadas y recomendaciones para ti.
+                                        </p>
+                                        <p style="margin: 20px 0 0; color: #57506b; font-size: 12px;">
+                                            © 2026 ANILEZ. Todos los derechos reservados.<br>
+                                            <a href="${frontendUrl}" style="color: #946ed9; text-decoration: none;">
+                                                Visita nuestro sitio web
+                                            </a>
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </body>
+            </html>
+        `,
+      });
+      this.logger.log(`Correo de cambio de correo enviado a ${correo}`);
+    } catch (error) {
+      this.logger.error(`Error al enviar correo de cambio de correo a ${correo}:`, error);
+      throw error;
+    }
+  }
 }

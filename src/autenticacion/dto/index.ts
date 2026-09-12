@@ -3,3 +3,8 @@ export { IniciarSesionDto } from './iniciar-sesion.dto.js';
 export { OlvidarContrasenaDto } from './olvidar-contrasena.dto.js';
 export { RestablecerContrasenaDto } from './restablecer-contrasena.dto.js';
 export { VerificarEmailDto } from './verificar-email.dto.js';
+export { ActualizarPerfilDto } from './actualizar-perfil.dto.js';
+export { SolicitarCambioCorreoDto } from './solicitar-cambio-correo.dto.js';
+export { ConfirmarCambioCorreoDto } from './confirmar-cambio-correo.dto.js';
+export { CambiarContrasenaDto } from './cambiar-contrasena.dto.js';
+export { EstablecerContrasenaDto } from './establecer-contrasena.dto.js';
