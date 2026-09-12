@@ -18,6 +18,7 @@ model usuarios {
   avatar             String?  @db.Text
   google_id          String?  @unique @db.VarChar(255)
   discord_id         String?  @unique @db.VarChar(255)
+  correo_pendiente   String?  @unique @map("correo_pendiente") @db.VarChar(255)
   email_verificado_en DateTime?
   creado_en          DateTime @default(now())
   actualizado_en     DateTime @updatedAt

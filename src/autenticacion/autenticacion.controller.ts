@@ -21,6 +21,11 @@ import { OlvidarContrasenaDto } from './dto/olvidar-contrasena.dto.js';
 import { RestablecerContrasenaDto } from './dto/restablecer-contrasena.dto.js';
 import { VerificarEmailDto } from './dto/verificar-email.dto.js';
 import { ActualizarPreferenciasDto } from './dto/actualizar-preferencias.dto.js';
+import { ActualizarPerfilDto } from './dto/actualizar-perfil.dto.js';
+import { SolicitarCambioCorreoDto } from './dto/solicitar-cambio-correo.dto.js';
+import { ConfirmarCambioCorreoDto } from './dto/confirmar-cambio-correo.dto.js';
+import { CambiarContrasenaDto } from './dto/cambiar-contrasena.dto.js';
+import { EstablecerContrasenaDto } from './dto/establecer-contrasena.dto.js';
 import { JwtGuard } from './guards/jwt-auth.guard.js';
 import { GoogleGuard } from './guards/google.guard.js';
 import { DiscordGuard } from './guards/discord.guard.js';
@@ -109,6 +114,60 @@ export class AutenticacionController {
       archivo.originalname,
       archivo.mimetype,
     );
+  }
+
+  // PATCH /auth/perfil (protegido) — Actualizar nombre
+  @UseGuards(JwtGuard)
+  @Patch('perfil')
+  actualizarPerfil(
+    @Request() req: { user: { id: string } },
+    @Body() dto: ActualizarPerfilDto,
+  ) {
+    return this.autenticacionService.actualizarPerfil(req.user.id, dto);
+  }
+
+  // POST /auth/solicitar-cambio-correo (protegido) — Solicitar cambio de correo
+  @UseGuards(JwtGuard)
+  @Post('solicitar-cambio-correo')
+  @HttpCode(HttpStatus.OK)
+  solicitarCambioCorreo(
+    @Request() req: { user: { id: string } },
+    @Body() dto: SolicitarCambioCorreoDto,
+  ) {
+    return this.autenticacionService.solicitarCambioCorreo(req.user.id, dto);
+  }
+
+  // POST /auth/confirmar-cambio-correo (protegido) — Confirmar cambio de correo
+  @UseGuards(JwtGuard)
+  @Post('confirmar-cambio-correo')
+  @HttpCode(HttpStatus.OK)
+  confirmarCambioCorreo(
+    @Request() req: { user: { id: string } },
+    @Body() dto: ConfirmarCambioCorreoDto,
+  ) {
+    return this.autenticacionService.confirmarCambioCorreo(req.user.id, dto);
+  }
+
+  // POST /auth/cambiar-contrasena (protegido) — Cambiar contraseña
+  @UseGuards(JwtGuard)
+  @Post('cambiar-contrasena')
+  @HttpCode(HttpStatus.OK)
+  cambiarContrasena(
+    @Request() req: { user: { id: string } },
+    @Body() dto: CambiarContrasenaDto,
+  ) {
+    return this.autenticacionService.cambiarContrasena(req.user.id, dto);
+  }
+
+  // POST /auth/establecer-contrasena (protegido) — Establecer contraseña para OAuth
+  @UseGuards(JwtGuard)
+  @Post('establecer-contrasena')
+  @HttpCode(HttpStatus.OK)
+  establecerContrasena(
+    @Request() req: { user: { id: string } },
+    @Body() dto: EstablecerContrasenaDto,
+  ) {
+    return this.autenticacionService.establecerContrasena(req.user.id, dto);
   }
 
   // ============================================================

@@ -1,8 +1,8 @@
 <p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://res.cloudinary.com/dkggojses/image/upload/v1788755301/logo_fwuv5m.svg" width="420" alt="Nest Logo" /></a>
+  <a href="http://anilez.site/" target="blank"><img src="https://res.cloudinary.com/dkggojses/image/upload/v1788755301/logo_fwuv5m.svg" width="520" alt="ANILEZ" /></a>
 </p>
 
----
+
 ---
 
 ## Project setup
@@ -36,3 +36,4 @@ $ pnpm run test:e2e
 # test coverage
 $ pnpm run test:cov
 ```
+---
