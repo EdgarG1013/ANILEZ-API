@@ -8,3 +8,4 @@ export { SolicitarCambioCorreoDto } from './solicitar-cambio-correo.dto.js';
 export { ConfirmarCambioCorreoDto } from './confirmar-cambio-correo.dto.js';
 export { CambiarContrasenaDto } from './cambiar-contrasena.dto.js';
 export { EstablecerContrasenaDto } from './establecer-contrasena.dto.js';
+export { EliminarCuentaDto } from './eliminar-cuenta.dto.js';
