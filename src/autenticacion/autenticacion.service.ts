@@ -22,6 +22,7 @@ import { SolicitarCambioCorreoDto } from './dto/solicitar-cambio-correo.dto.js';
 import { ConfirmarCambioCorreoDto } from './dto/confirmar-cambio-correo.dto.js';
 import { CambiarContrasenaDto } from './dto/cambiar-contrasena.dto.js';
 import { EstablecerContrasenaDto } from './dto/establecer-contrasena.dto.js';
+import { EliminarCuentaDto } from './dto/eliminar-cuenta.dto.js';
 import { hashToken, unhashToken } from './utils/token.util.js';
 
 @Injectable()
@@ -678,6 +679,45 @@ export class AutenticacionService {
     return {
       ok: true,
       mensaje: 'Contraseña establecida exitosamente. Ahora puedes iniciar sesión con tu correo y contraseña.',
+    };
+  }
+
+  // ============================================================
+  // ELIMINAR CUENTA
+  // ============================================================
+  async eliminarCuenta(usuarioId: string, dto: EliminarCuentaDto) {
+    const usuario = await this.prisma.usuarios.findUnique({
+      where: { id: usuarioId },
+    });
+
+    if (!usuario) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    if (usuario.nombre !== dto.nombre) {
+      throw new BadRequestException('El nombre no coincide. Escribe exactamente tu nombre de usuario para confirmar.');
+    }
+
+    // Eliminar avatar de Supabase Storage
+    if (usuario.avatar) {
+      try {
+        const urlParts = usuario.avatar.split('/');
+        const bucketIndex = urlParts.indexOf('avatars');
+        if (bucketIndex !== -1) {
+          const filePath = urlParts.slice(bucketIndex + 1).join('/');
+          await this.supabase.storage.from('avatars').remove([filePath]);
+        }
+      } catch {
+        // Ignorar errores al eliminar avatar
+      }
+    }
+
+    // Eliminar usuario (cascade elimina: preferencias, listas, listas_externas, grupos, etc.)
+    await this.prisma.usuarios.delete({ where: { id: usuarioId } });
+
+    return {
+      ok: true,
+      mensaje: 'Cuenta eliminada exitosamente.',
     };
   }
 }

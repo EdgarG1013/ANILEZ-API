@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Patch,
+  Delete,
   Body,
   UseGuards,
   Request,
@@ -26,6 +27,7 @@ import { SolicitarCambioCorreoDto } from './dto/solicitar-cambio-correo.dto.js';
 import { ConfirmarCambioCorreoDto } from './dto/confirmar-cambio-correo.dto.js';
 import { CambiarContrasenaDto } from './dto/cambiar-contrasena.dto.js';
 import { EstablecerContrasenaDto } from './dto/establecer-contrasena.dto.js';
+import { EliminarCuentaDto } from './dto/eliminar-cuenta.dto.js';
 import { JwtGuard } from './guards/jwt-auth.guard.js';
 import { GoogleGuard } from './guards/google.guard.js';
 import { DiscordGuard } from './guards/discord.guard.js';
@@ -168,6 +170,17 @@ export class AutenticacionController {
     @Body() dto: EstablecerContrasenaDto,
   ) {
     return this.autenticacionService.establecerContrasena(req.user.id, dto);
+  }
+
+  // DELETE /auth/cuenta (protegido) — Eliminar cuenta
+  @UseGuards(JwtGuard)
+  @Delete('cuenta')
+  @HttpCode(HttpStatus.OK)
+  eliminarCuenta(
+    @Request() req: { user: { id: string } },
+    @Body() dto: EliminarCuentaDto,
+  ) {
+    return this.autenticacionService.eliminarCuenta(req.user.id, dto);
   }
 
   // ============================================================
