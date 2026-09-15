@@ -241,6 +241,7 @@ export interface MangaDetalle {
 export interface PopularItem {
   id: number;
   title: string;
+  type: string;
   synopsis: string | null;
   genres: string[];
   year: number | null;
@@ -631,6 +632,7 @@ export class CatalogoService {
         .map(i => ({
           id: i.id,
           title: i.title,
+          type: i.type,
           synopsis: i.synopsis,
           genres: i.genres,
           year: i.year,
@@ -654,6 +656,7 @@ export class CatalogoService {
         .map(i => ({
           id: i.id,
           title: i.title,
+          type: i.type,
           synopsis: i.synopsis,
           genres: i.genres,
           year: i.year,
